@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Static Cache Generator
  * Description: Generate static HTML files with fully local CSS/JS/Images/Fonts
- * Version: 2.0
+ * Version: 2.0.1
  * Author: Derick Schaefer
  * Text Domain: static-cache-generator
  */

@@ -349,6 +349,26 @@ sudo apt-get install php-zip
 sudo systemctl restart php7.4-fpm nginx
 ```
 
+### Favicons missing or broken
+
+**Check if favicon is in HTML:**
+```bash
+# View page source and look for <link rel="icon">
+curl https://your-site.com | grep favicon
+```
+
+**Manually copy favicon files:**
+```bash
+# If using a favicon generator plugin
+cp /wp-content/uploads/fbrfg/* /wp-content/cache/_static/assets/
+```
+
+**Use a simple favicon.ico:**
+```bash
+# Place in WordPress root - works without <link> tag
+cp favicon.ico /var/www/html/favicon.ico
+```
+
 ## Performance
 
 - **Generation overhead:** ~50-100ms per page (buffering + file write)
@@ -432,11 +452,8 @@ the Free Software Foundation; either version 2 of the License, or
 
 - [ ] Automatic sitemap crawling
 - [ ] Multi-language support
-- [ ] FTP/SFTP direct deployment
 - [ ] Incremental generation (only changed pages)
-- [ ] REST API endpoints
-- [ ] Docker image for testing
-- [ ] Performance benchmarking suite
+- [ ] URL include and exclude support
 
 ## Changelog
 
