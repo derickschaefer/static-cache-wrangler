@@ -25,6 +25,23 @@ $downloaded_count = is_array($downloaded_assets) ? count($downloaded_assets) : 0
 $static_dir_size = SCG_Core::get_directory_size($static_dir);
 $dir_size_pretty = SCG_Core::format_bytes($static_dir_size);
 
+// Calculate available disk space
+$disk_free = @disk_free_space(WP_CONTENT_DIR);
+$disk_free_pretty = $disk_free !== false ? SCG_Core::format_bytes($disk_free) : __('Unknown', 'static-cache-generator');
+
+// Determine disk space warning level
+$disk_warning = false;
+$disk_warning_type = 'info';
+if ($disk_free !== false) {
+    if ($disk_free < 500 * 1024 * 1024) { // Less than 500MB
+        $disk_warning = __('Low disk space available', 'static-cache-generator');
+        $disk_warning_type = 'warning';
+    } elseif ($static_dir_size > 1024 * 1024 * 1024) { // Static files over 1GB
+        $disk_warning = __('Static cache is using significant disk space', 'static-cache-generator');
+        $disk_warning_type = 'info';
+    }
+}
+
 // Success messages
 $messages = [
     'enabled'   => __('Static site generation enabled.', 'static-cache-generator'),
@@ -32,13 +49,27 @@ $messages = [
     'cleared'   => __('All static files cleared.', 'static-cache-generator'),
     'processed' => __('Assets processed successfully.', 'static-cache-generator'),
 ];
+$message_key = isset($_GET['message']) ? sanitize_key($_GET['message']) : '';
 ?>
 <div class="wrap">
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
 
-    <?php if (isset($_GET['message']) && isset($messages[$_GET['message']])): ?>
+    <?php if ($message_key && isset($messages[$message_key])): ?>
         <div class="notice notice-success is-dismissible">
-            <p><?php echo esc_html($messages[$_GET['message']]); ?></p>
+            <p><?php echo esc_html($messages[$message_key]); ?></p>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($disk_warning): ?>
+        <div class="notice notice-<?php echo esc_attr($disk_warning_type); ?>">
+            <p>
+                <strong><?php echo esc_html($disk_warning); ?>:</strong>
+                <?php echo esc_html($dir_size_pretty); ?> <?php _e('used by static files', 'static-cache-generator'); ?>,
+                <?php echo esc_html($disk_free_pretty); ?> <?php _e('available', 'static-cache-generator'); ?>.
+                <?php if ($disk_warning_type === 'warning'): ?>
+                    <?php _e('Consider clearing old files or freeing up disk space through your hosting control panel.', 'static-cache-generator'); ?>
+                <?php endif; ?>
+            </p>
         </div>
     <?php endif; ?>
 
@@ -62,7 +93,7 @@ $messages = [
             <div class="scg-label">
                 <?php echo number_format_i18n($pending_count); ?> <?php _e('pending', 'static-cache-generator'); ?>
                 <?php if ($pending_count > 0 && $enabled): ?>
-                    <span aria-hidden="true" title="<?php esc_attr_e('Pending assets exist', 'static-cache-generator'); ?>">⚠</span>
+                    <span aria-hidden="true" title="<?php esc_attr_e('Pending assets exist', 'static-cache-generator'); ?>">⚠ </span>
                 <?php endif; ?>
             </div>
         </div>
@@ -78,6 +109,52 @@ $messages = [
     <div class="scg-layout" style="display:flex;gap:20px;align-items:flex-start;margin-top:20px;">
         <!-- Main Content -->
         <div style="flex:1;min-width:0;">
+
+            <!-- Disk Usage Information Panel -->
+            <div class="scg-panel scg-card">
+                <h2 class="scg-panel-title"><?php _e('Disk Usage Information', 'static-cache-generator'); ?></h2>
+                <table class="widefat" style="margin-top:10px;">
+                    <tbody>
+                        <tr>
+                            <td style="width:220px;"><strong><?php _e('Static Files Size', 'static-cache-generator'); ?></strong></td>
+                            <td><?php echo esc_html($dir_size_pretty); ?></td>
+                        </tr>
+                        <tr class="alternate">
+                            <td><strong><?php _e('Available Disk Space', 'static-cache-generator'); ?></strong></td>
+                            <td>
+                                <?php if ($disk_free !== false): ?>
+                                    <?php echo esc_html($disk_free_pretty); ?>
+                                    <?php if ($disk_free < 500 * 1024 * 1024): ?>
+                                        <span class="scg-bad">⚠ <?php _e('Low', 'static-cache-generator'); ?></span>
+                                    <?php else: ?>
+                                        <span class="scg-ok">✓ <?php _e('Adequate', 'static-cache-generator'); ?></span>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <span style="color:#666;"><?php _e('Unable to determine', 'static-cache-generator'); ?></span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong><?php _e('HTML Files', 'static-cache-generator'); ?></strong></td>
+                            <td><?php echo number_format_i18n($static_count); ?> <?php _e('files', 'static-cache-generator'); ?></td>
+                        </tr>
+                        <tr class="alternate">
+                            <td><strong><?php _e('Downloaded Assets', 'static-cache-generator'); ?></strong></td>
+                            <td><?php echo number_format_i18n($downloaded_count); ?> <?php _e('files (CSS, JS, images, fonts)', 'static-cache-generator'); ?></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="margin-top:15px;padding:12px;background:#f0f0f1;border-left:4px solid #72aee6;font-size:13px;line-height:1.6;">
+                    <strong>ℹ️ <?php _e('About Disk Usage', 'static-cache-generator'); ?></strong><br>
+                    <?php _e('This plugin does not enforce disk limits. Disk space is managed by your hosting environment.', 'static-cache-generator'); ?>
+                    <?php _e('Typical usage: 50-200 MB (small sites), 200 MB - 1 GB (medium sites), 1-5 GB (large sites).', 'static-cache-generator'); ?>
+                    <?php if ($static_dir_size > 1024 * 1024 * 1024): ?>
+                        <br><br>
+                        <strong><?php _e('Tip:', 'static-cache-generator'); ?></strong>
+                        <?php _e('Your static cache is over 1 GB. Consider clearing old files if disk space is a concern.', 'static-cache-generator'); ?>
+                    <?php endif; ?>
+                </div>
+            </div>
 
             <!-- File System Locations Panel -->
             <div class="scg-panel scg-card">
@@ -154,7 +231,7 @@ $messages = [
                     <li><?php _e('Rsync to multiple geographies and geo-load balance with Cloudflare or another DNS provider for fast, local reads.', 'static-cache-generator'); ?></li>
                 </ol>
             </div>
-	</div>"
+	</div>
 
 
         <!-- Sidebar -->

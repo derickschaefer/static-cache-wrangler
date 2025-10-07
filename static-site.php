@@ -2,9 +2,14 @@
 /**
  * Plugin Name: Static Cache Generator
  * Description: Generate static HTML files with fully local CSS/JS/Images/Fonts
- * Version: 2.0.1
+ * Version: 2.0
  * Author: Derick Schaefer
  * Text Domain: static-cache-generator
+ * Domain Path: /languages
+ * Requires at least: 5.0
+ * Requires PHP: 7.4
+ * License: GPL v2 or later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  */
 
 if (!defined('ABSPATH')) exit;
@@ -41,6 +46,9 @@ spl_autoload_register(function($class) {
 
 // Initialize plugin
 function scg_init() {
+    // Load text domain for translations
+    load_plugin_textdomain('static-cache-generator', false, dirname(plugin_basename(__FILE__)) . '/languages');
+    
     // Core functionality
     $core = new SCG_Core();
     $core->init();
@@ -68,3 +76,39 @@ add_action('plugins_loaded', 'scg_init');
 register_activation_hook(__FILE__, function() {
     SCG_Core::create_directories();
 });
+
+// Add settings link on plugins page
+add_filter('plugin_action_links_' . plugin_basename(__FILE__), function($links) {
+    $settings_link = sprintf(
+        '<a href="%s">%s</a>',
+        esc_url(admin_url('admin.php?page=static-cache-generator')),
+        esc_html__('Settings', 'static-cache-generator')
+    );
+    
+    // Add settings link at the beginning of the array
+    array_unshift($links, $settings_link);
+    
+    return $links;
+});
+
+// Add additional plugin meta links
+add_filter('plugin_row_meta', function($links, $file) {
+    if (plugin_basename(__FILE__) !== $file) {
+        return $links;
+    }
+    
+    $additional_links = [
+        sprintf(
+            '<a href="%s" target="_blank">%s</a>',
+            esc_url('https://github.com/yourusername/static-cache-generator/wiki'),
+            esc_html__('Documentation', 'static-cache-generator')
+        ),
+        sprintf(
+            '<a href="%s" target="_blank">%s</a>',
+            esc_url('https://github.com/yourusername/static-cache-generator/issues'),
+            esc_html__('Support', 'static-cache-generator')
+        ),
+    ];
+    
+    return array_merge($links, $additional_links);
+}, 10, 2);

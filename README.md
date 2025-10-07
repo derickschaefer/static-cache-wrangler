@@ -212,6 +212,62 @@ define('SCG_ASSETS_DIR', WP_CONTENT_DIR . '/my-assets/');
 // Disable async asset processing (process immediately)
 define('SCG_ASYNC_ASSETS', false);
 ```
+## Asset Handling
+
+### What Gets Downloaded
+
+The plugin automatically downloads and localizes:
+
+- ✅ **CSS files** - Stylesheets with nested `url()` references processed
+- ✅ **JavaScript files** - Scripts with hardcoded asset URLs rewritten
+- ✅ **Images** - All formats (JPG, PNG, GIF, SVG, WebP, AVIF)
+- ✅ **Fonts** - Web fonts (WOFF, WOFF2, TTF, EOT)
+- ✅ **Standard favicons** - Referenced in `<link>` tags
+- ✅ **Responsive images** - srcset attributes processed
+- ✅ **Background images** - From inline styles
+
+### Favicon Handling
+
+The plugin automatically downloads and localizes standard favicons referenced in `<link>` tags.
+
+**Supported:**
+- Standard favicon links: `<link rel="icon" href="/favicon.ico">`
+- PNG/SVG icons: `<link rel="icon" href="/icon.png">`
+- Apple touch icons: `<link rel="apple-touch-icon" href="/apple-icon.png">`
+- Shortcut icons: `<link rel="shortcut icon" href="/favicon.ico">`
+
+**Not Automatically Supported:**
+- Dynamically generated favicons (via plugins like RealFaviconGenerator)
+- Progressive Web App manifests (`manifest.json` with icon arrays)
+- Favicon sets generated at runtime
+
+**Manual Fix for Dynamic/Complex Favicons:**
+
+If you use a plugin that generates favicons dynamically:
+
+1. Generate your static site normally
+2. Locate your favicon files (usually in `/wp-content/uploads/` or theme directory)
+3. Manually copy them to `/wp-content/cache/_static/assets/`
+4. If needed, update the HTML in your static files to reference the correct paths
+
+Example:
+```bash
+# Copy dynamically generated favicons
+cp /wp-content/uploads/fbrfg/* /wp-content/cache/_static/assets/
+
+# Re-create ZIP with updated favicons
+wp scg zip
+```
+
+**Simple Solution:** For maximum compatibility, place a standard `favicon.ico` file in your WordPress root directory. Browsers will request it automatically even without a `<link>` tag.
+
+### What Doesn't Get Downloaded
+
+- ❌ External CDN assets (Google Fonts, jQuery CDN, etc.) - Links preserved as-is
+- ❌ Third-party embeds (YouTube, Twitter, etc.) - Require internet connection
+- ❌ Dynamic content loaded via AJAX/REST API
+- ❌ Assets from different domains (cross-origin)
+
 
 ### Filters
 
@@ -376,6 +432,49 @@ cp favicon.ico /var/www/html/favicon.ico
 - **Memory usage:** ~2MB additional per request
 - **Disk I/O:** Sequential writes, minimal impact
 
+## Disk Space Considerations
+
+The plugin stores static files in `wp-content/cache/_static/`. Disk usage varies based on your site:
+
+**Typical Disk Usage:**
+- **Small site** (10-50 pages): 50-200 MB
+- **Medium site** (100-500 pages): 200 MB - 1 GB  
+- **Large site** (1000+ pages): 1-5 GB
+- **Very large site** (5000+ pages): 5-20 GB
+
+**What Uses Space:**
+- HTML files: Minimal (typically 10-50 KB per page)
+- CSS/JS files: 100 KB - 5 MB total
+- Images: Largest contributor (depends on image optimization)
+- Fonts: 100 KB - 2 MB per font family
+
+**The plugin does not enforce disk limits** - disk space management is handled by your hosting environment. 
+
+**Monitor disk usage through:**
+- WordPress admin dashboard: **Settings > Static Cache** (shows total size)
+- WP-CLI: `wp scg status` (detailed breakdown)
+- Your hosting control panel
+
+**To reduce disk usage:**
+```bash
+# Clear all static files
+wp scg clear
+
+# Or manually delete old files
+rm -rf /var/www/html/wp-content/cache/_static/*
+```
+
+**Exclude large pages from generation:**
+```php
+add_filter('scg_should_generate', function($should, $url) {
+    // Don't generate static files for media-heavy pages
+    if (strpos($url, '/gallery/') !== false) {
+        return false;
+    }
+    return $should;
+}, 10, 2);
+```
+
 ### Optimization Tips
 
 1. **Process assets during off-peak hours:**
@@ -396,6 +495,15 @@ cp favicon.ico /var/www/html/favicon.ico
    # Weekly cleanup
    0 3 * * 0 /usr/bin/wp scg clear --path=/var/www/html
    ```
+**Best practices:**
+- Optimize images before generating static site (use image optimization plugins)
+- Clear old static files before regenerating
+- Monitor disk usage regularly
+- Consider hosting environment with adequate disk space for your needs
+
+**Video and Audio Files:**  
+The plugin intentionally does not download video (MP4, WebM) or audio (MP3, WAV) files. These should remain on your WordPress server or external hosting (YouTube, Vimeo, CDN). The static HTML will link to these resources.
+
 
 ## Contributing
 
