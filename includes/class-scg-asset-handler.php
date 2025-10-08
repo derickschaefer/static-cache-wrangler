@@ -36,7 +36,7 @@ class SCG_Asset_Handler {
             return;
         }
         
-        scg_log_debug( 'Queueing ' . count( $assets ) . ' assets' );
+        scg_log_debug('Queueing ' . count($assets) . ' assets');
         
         // Merge with existing pending assets
         $existing = get_option('scg_pending_assets', []);
@@ -171,14 +171,14 @@ class SCG_Asset_Handler {
                     sleep(1);
                     return $this->download_to_assets($url, $retry + 1);
                 }
-                scg_log_debug( 'Failed to download: ' . $url );
+                scg_log_debug('Failed to download: ' . $url);
                 return false;
             }
             
             // Check HTTP status code
             $code = wp_remote_retrieve_response_code($response);
             if ($code < 200 || $code > 299) {
-                scg_log_debug( 'HTTP ' . $code . ' for: ' . $url );
+                scg_log_debug('HTTP ' . $code . ' for: ' . $url);
                 return false;
             }
             
@@ -198,8 +198,26 @@ class SCG_Asset_Handler {
                 $body = $this->process_js_content($body, $url);
             }
 
-            // Save file to assets directory
-            file_put_contents($dest, $body);
+            // Initialize WP_Filesystem
+            global $wp_filesystem;
+            if (empty($wp_filesystem)) {
+                require_once ABSPATH . 'wp-admin/includes/file.php';
+                WP_Filesystem();
+            }
+
+            // Save file to assets directory using WP_Filesystem
+            if ($wp_filesystem) {
+                $result = $wp_filesystem->put_contents($dest, $body, FS_CHMOD_FILE);
+                if ($result === false) {
+                    scg_log_debug('Failed to save asset: ' . $filename);
+                    return false;
+                } else {
+                    scg_log_debug('Successfully saved asset: ' . $filename);
+                }
+            } else {
+                scg_log_debug('Failed to initialize WP_Filesystem for saving asset: ' . $filename);
+                return false;
+            }
             
             // Mark as downloaded
             $downloaded[] = $filename;

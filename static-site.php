@@ -43,6 +43,9 @@ spl_autoload_register(function($class) {
     }
 });
 
+// Load logger utility
+require_once SCG_PLUGIN_DIR . 'includes/scg-logger.php';
+
 // Initialize plugin
 function scg_init() {
     // Core functionality
@@ -67,6 +70,17 @@ function scg_init() {
     }
 }
 add_action('plugins_loaded', 'scg_init');
+
+/**
+ * Add a Settings link on the Plugins page
+ */
+function scg_add_settings_link( $links ) {
+    $settings_url = admin_url( 'options-general.php?page=static-cache-generator' ); // Adjust if your admin slug differs
+    $settings_link = '<a href="' . esc_url( $settings_url ) . '">' . esc_html__( 'Settings', 'static-cache-generator' ) . '</a>';
+    array_unshift( $links, $settings_link );
+    return $links;
+}
+add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'scg_add_settings_link' );
 
 // Activation hook
 register_activation_hook(__FILE__, function() {
