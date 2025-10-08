@@ -104,10 +104,10 @@ Revisit the updated pages while generation is enabled, or run `wp scg process` t
 
 == Screenshots ==
 
-1. Card-based dashboard showing generation status and stats.  
-2. Directory and asset overview.  
-3. Background asset queue with progress indicator.  
-4. WP-CLI commands in action.  
+1. Card-based dashboard showing generation status and stats  
+2. Admin bar actions and stats
+3. Background asset queue with progress indicator 
+4. Paused status with ability to resume 
 
 ---
 
