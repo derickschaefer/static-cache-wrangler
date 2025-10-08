@@ -1,6 +1,6 @@
 === Static Cache Generator ===
 Contributors: derickschaefer
-Tags: static site, cache, html, offline, performance, wp-cli, cdn, s3, failover, static site deployments, html export, static publishing, static export, site export, html snapshot
+Tags: static site, html export, offline, wp-cli, performance
 Requires at least: 5.0
 Tested up to: 6.8
 Requires PHP: 7.4
