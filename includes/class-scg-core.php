@@ -1,26 +1,35 @@
 <?php
 /**
- * ============================================================================
- * FILE: includes/class-scg-core.php
- * 
- * SECURITY UPDATE:
- * - Added validate_deletion_path() to prevent path traversal attacks
- * - Updated delete_directory_contents() with symlink protection
- * - Added realpath() validation to ensure paths stay within allowed directories
- * - Removed @ error suppression, added proper error handling
- * - Return boolean success/failure indicators
- * ============================================================================
+ * Core functionality for Static Cache Generator
+ *
+ * Handles initialization, directory management, file operations,
+ * and coordination between components.
+ *
+ * @package StaticCacheGenerator
+ * @since 2.0
  */
 
 if (!defined('ABSPATH')) exit;
 
 class SCG_Core {
     
+    /**
+     * Generator instance
+     * @var SCG_Generator
+     */
     private $generator;
+    
+    /**
+     * Asset handler instance
+     * @var SCG_Asset_Handler
+     */
     private $asset_handler;
     
     /**
      * Initialize core functionality
+     *
+     * Sets up directory structure, initializes components,
+     * and registers WordPress hooks.
      */
     public function init() {
         self::create_directories();
@@ -42,6 +51,8 @@ class SCG_Core {
     
     /**
      * Create necessary directories
+     *
+     * Creates static files and assets directories with proper permissions
      */
     public static function create_directories() {
         $directories = [self::get_static_dir(), self::get_assets_dir()];
@@ -102,8 +113,8 @@ class SCG_Core {
                     $count++;
                 }
             }
-        } catch (Exception $e) {
-            error_log('SCG Error counting files: ' . $e->getMessage());
+	} catch (Exception $e) {
+		scg_log_debug( 'Error counting files: ' . $e->getMessage() );
         }
         
         return $count;
@@ -136,8 +147,8 @@ class SCG_Core {
                     $size += $file->getSize();
                 }
             }
-        } catch (Exception $e) {
-            error_log('SCG Error calculating size: ' . $e->getMessage());
+	} catch (Exception $e) {
+		scg_log_debug( 'Error calculating size: ' . $e->getMessage() );
         }
         
         return $size;
@@ -161,184 +172,49 @@ class SCG_Core {
     
     /**
      * Clear all static files and reset options
-     * 
-     * @return bool True on success, false on failure
      */
     public static function clear_all_files() {
         $static_dir = self::get_static_dir();
         $assets_dir = self::get_assets_dir();
         
-        $success = true;
-        
-        // Clear static directory with validation
+        // Clear static directory
         if (is_dir($static_dir)) {
-            if (!self::delete_directory_contents($static_dir)) {
-                error_log('[SCG] Failed to clear static directory: ' . $static_dir);
-                $success = false;
-            }
+            self::delete_directory_contents($static_dir);
         }
         
-        // Clear assets directory with validation
+        // Clear assets directory
         if (is_dir($assets_dir)) {
-            if (!self::delete_directory_contents($assets_dir)) {
-                error_log('[SCG] Failed to clear assets directory: ' . $assets_dir);
-                $success = false;
-            }
+            self::delete_directory_contents($assets_dir);
         }
         
-        // Reset options even if file deletion partially failed
+        // Reset options
         delete_option('scg_pending_assets');
         delete_option('scg_downloaded_assets');
         
         // Recreate directories
         self::create_directories();
-        
-        return $success;
     }
     
     /**
-     * Validate path is safe for deletion operations
+     * Recursively delete directory contents
      * 
-     * Security checks:
-     * 1. Path must exist
-     * 2. Must resolve to real path (no broken symlinks)
-     * 3. Must be within WP_CONTENT_DIR/cache/ directory
-     * 4. Cannot be a symlink itself (prevents symlink attacks)
-     * 5. Must be a directory (sanity check)
-     * 
-     * @param string $dir Directory path to validate
-     * @return bool True if path is safe to delete from
-     */
-    private static function validate_deletion_path($dir) {
-        // Step 1: Path must exist
-        if (!file_exists($dir)) {
-            error_log('[SCG] Validation failed: Path does not exist: ' . $dir);
-            return false;
-        }
-        
-        // Step 2: Must be a directory (not a file)
-        if (!is_dir($dir)) {
-            error_log('[SCG] Validation failed: Not a directory: ' . $dir);
-            return false;
-        }
-        
-        // Step 3: Cannot be a symlink (prevents symlink attack on directory itself)
-        if (is_link($dir)) {
-            error_log('[SCG] Security: Refusing to delete symlinked directory: ' . $dir);
-            return false;
-        }
-        
-        // Step 4: Resolve to real path (handles any remaining symlinks in path)
-        $real_dir = realpath($dir);
-        if ($real_dir === false) {
-            error_log('[SCG] Validation failed: Cannot resolve real path for: ' . $dir);
-            return false;
-        }
-        
-        // Step 5: Define allowed base directory (only cache directory)
-        $allowed_base = realpath(WP_CONTENT_DIR . '/cache');
-        
-        if ($allowed_base === false) {
-            error_log('[SCG] Validation failed: Cannot resolve cache directory path');
-            return false;
-        }
-        
-        // Step 6: Verify path is within allowed directory
-        // Use strpos to check if real path starts with allowed base
-        if (strpos($real_dir, $allowed_base) !== 0) {
-            error_log('[SCG] Security: Refusing to delete outside cache directory: ' . $real_dir);
-            error_log('[SCG] Allowed base: ' . $allowed_base);
-            return false;
-        }
-        
-        // Step 7: Additional sanity check - ensure we're not deleting the cache root itself
-        if ($real_dir === $allowed_base) {
-            error_log('[SCG] Security: Refusing to delete cache root directory');
-            return false;
-        }
-        
-        return true;
-    }
-    
-    /**
-     * Recursively delete directory contents with security validation
-     * 
-     * Security features:
-     * - Validates path before any deletion
-     * - Checks each file/directory is not a symlink
-     * - Only deletes within allowed directories
-     * - Proper error handling (no @ suppression)
-     * - Returns success/failure status
-     * 
-     * @param string $dir Directory path to clear
-     * @return bool True on success, false on failure
+     * @param string $dir Directory path
      */
     private static function delete_directory_contents($dir) {
-        // SECURITY: Validate path before any deletion operations
-        if (!self::validate_deletion_path($dir)) {
-            error_log('[SCG] Path validation failed, aborting deletion: ' . $dir);
-            return false;
+        if (!is_dir($dir)) {
+            return;
         }
         
-        try {
-            $iterator = new RecursiveIteratorIterator(
-                new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
-                RecursiveIteratorIterator::CHILD_FIRST
-            );
-            
-            $delete_count = 0;
-            $skip_count = 0;
-            
-            foreach ($iterator as $file) {
-                $file_path = $file->getPathname();
-                
-                // SECURITY: Skip symlinks (don't follow them)
-                if (is_link($file_path)) {
-                    error_log('[SCG] Skipping symlink: ' . $file_path);
-                    $skip_count++;
-                    continue;
-                }
-                
-                // SECURITY: Double-check each file is still within allowed directory
-                $real_file_path = realpath($file_path);
-                if ($real_file_path === false) {
-                    error_log('[SCG] Cannot resolve real path, skipping: ' . $file_path);
-                    $skip_count++;
-                    continue;
-                }
-                
-                $allowed_base = realpath(WP_CONTENT_DIR . '/cache');
-                if (strpos($real_file_path, $allowed_base) !== 0) {
-                    error_log('[SCG] File outside allowed directory, skipping: ' . $real_file_path);
-                    $skip_count++;
-                    continue;
-                }
-                
-                // Delete file or directory
-                if ($file->isDir()) {
-                    if (rmdir($file_path)) {
-                        $delete_count++;
-                    } else {
-                        error_log('[SCG] Failed to delete directory: ' . $file_path);
-                    }
-                } else {
-                    if (unlink($file_path)) {
-                        $delete_count++;
-                    } else {
-                        error_log('[SCG] Failed to delete file: ' . $file_path);
-                    }
-                }
-            }
-            
-            if ($skip_count > 0) {
-                error_log("[SCG] Deleted {$delete_count} items, skipped {$skip_count} items");
-            }
-            
-            return true;
-            
-        } catch (Exception $e) {
-            error_log('[SCG] Exception during directory deletion: ' . $e->getMessage());
-            return false;
+        // Initialize WP_Filesystem
+        global $wp_filesystem;
+        if (empty($wp_filesystem)) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            WP_Filesystem();
+        }
+        
+        // Use WP_Filesystem to remove directory recursively
+        if ($wp_filesystem && $wp_filesystem->is_dir($dir)) {
+            $wp_filesystem->rmdir($dir, true);
         }
     }
     
@@ -349,11 +225,11 @@ class SCG_Core {
      */
     public static function create_zip() {
         if (!class_exists('ZipArchive')) {
-            error_log('SCG Error: ZipArchive not available');
+            scg_log_debug( 'Error: ZipArchive not available' );
             return false;
         }
 
-        $zip_file = trailingslashit(WP_CONTENT_DIR . '/cache') . 'static-site-' . date('Y-m-d-H-i-s') . '.zip';
+        $zip_file = trailingslashit(WP_CONTENT_DIR . '/cache') . 'static-site-' . current_time('Y-m-d-H-i-s') . '.zip';
         
         // Ensure cache directory exists
         wp_mkdir_p(dirname($zip_file));
@@ -361,7 +237,7 @@ class SCG_Core {
         $zip = new ZipArchive();
 
         if ($zip->open($zip_file, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            error_log('SCG Error: Could not create ZIP file');
+            scg_log_debug( 'Error: Could not create ZIP file' );
             return false;
         }
 
@@ -383,7 +259,7 @@ class SCG_Core {
     }
     
     /**
-     * Recursively add directory to ZIP with symlink protection
+     * Recursively add directory to ZIP
      * 
      * @param ZipArchive $zip ZIP archive object
      * @param string $dir Source directory
@@ -398,13 +274,6 @@ class SCG_Core {
 
             foreach ($iterator as $file) {
                 $path = $file->getPathname();
-                
-                // SECURITY: Skip symlinks to prevent including files outside intended directory
-                if (is_link($path)) {
-                    error_log('[SCG] Skipping symlink in ZIP: ' . $path);
-                    continue;
-                }
-                
                 $relative = ltrim(str_replace($dir, '', $path), '/');
                 
                 if ($base_path) {
@@ -416,12 +285,14 @@ class SCG_Core {
                 }
             }
         } catch (Exception $e) {
-            error_log('SCG Error adding to ZIP: ' . $e->getMessage());
+            scg_log_debug( 'Error adding to ZIP: ' . $e->getMessage() );
         }
     }
     
     /**
      * Admin footer script for auto-processing
+     *
+     * Outputs JavaScript for automatic asset processing in the background
      */
     public function admin_footer_script() {
         if (!current_user_can('manage_options') || !self::is_enabled()) {
@@ -434,6 +305,7 @@ class SCG_Core {
         }
         
         $nonce = wp_create_nonce('scg_process');
+        $ajax_url = admin_url('admin-ajax.php');
         ?>
         <script type="text/javascript">
         window.ssgProcessNow = function() {
@@ -456,14 +328,14 @@ class SCG_Core {
                     console.log('SSG: Manually processing assets...');
                 }
                 
-                fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+                fetch('<?php echo esc_url($ajax_url); ?>', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
                     body: new URLSearchParams({
                         action: 'scg_process_pending',
-                        nonce: '<?php echo $nonce; ?>'
+                        nonce: '<?php echo esc_js($nonce); ?>'
                     })
                 })
                 .then(response => response.json())
