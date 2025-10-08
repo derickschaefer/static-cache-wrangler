@@ -1,9 +1,11 @@
 <?php
 /**
  * Plugin Name: Static Cache Generator
+ * Plugin URI: https://moderncli.dev/code/static-cache-generator/
  * Description: Generate static HTML files with fully local CSS/JS/Images/Fonts
  * Version: 2.0.2
  * Author: Derick Schaefer
+ * Author URI: https://moderncli.dev/author/
  * Text Domain: static-cache-generator
  * Requires at least: 5.0
  * Requires PHP: 7.4
