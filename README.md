@@ -547,8 +547,8 @@ the Free Software Foundation; either version 2 of the License, or
 
 **Derick Schaefer**
 
-- GitHub: [@yourusername](https://github.com/yourusername)
-- Website: [your-website.com](https://your-website.com)
+- GitHub: [@derickschaefer](https://github.com/derickschaefer)
+- Website: [ModernCLI.dev](https://moderncli.dev)
 
 ## Support
 
