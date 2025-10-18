@@ -82,7 +82,7 @@ Full control without the dashboard:
 == Frequently Asked Questions ==
 
 = Does it work with any theme or builder? =
-Yes — Static Cache Generator captures the final rendered HTML, so it works with any theme, builder, or framework (Elementor, Divi, Gutenberg, etc.).
+Yes — Static Cache Generator captures the final rendered HTML, so it works with any theme, builder, or framework (Elementor®, Divi®, Gutenberg®, etc.).
 
 = Does it use a lot of resources? =
 No — it’s designed as a *lazy loader*, generating static pages only on demand with minimal memory and CPU impact.
@@ -144,9 +144,9 @@ Major update with enhanced stability, performance, and compliance. Recommended f
 
 **Offline Documentation** — Generate static, portable documentation sites for offline or air-gapped environments.  
 **Client Deliverables** — Deliver static versions that eliminate hosting complexity.  
-**Failover Ready** — Rsync to a read-only Nginx server for uninterrupted uptime.  
-**CDN / S3 Deployment** — Publish static HTML to S3, Cloudflare Pages, or Netlify for instant global delivery.  
-**Geo Load Balancing** — Serve from multiple regions with Cloudflare or Route53 for high performance.  
+**Failover Ready** — Rsync to a read-only Nginx® server for uninterrupted uptime.  
+**CDN / Amazon S3® Deployment** — Publish static HTML to Amazon S3®, Cloudflare®, or Netlify® for instant global delivery.  
+**Geo Load Balancing** — Serve from multiple regions with Cloudflare or Amazon Route53® for high performance.  
 **Archival Snapshots** — Capture your site before major redesigns or migrations.
 
 ---
@@ -175,6 +175,27 @@ Major update with enhanced stability, performance, and compliance. Recommended f
 * Uses native WordPress options and transients
 * All plugin data and scheduled tasks removed automatically on uninstall
 
+---
+
+== Trademark Recognition and Legal Disclaimer ==
+All product names, logos, and brands referenced in this plugin and its documentation are property of their respective owners.
+
+NGINX® is a registered trademark of F5, Inc.  
+Amazon S3® and Route 53™ are trademarks of Amazon Technologies, Inc.  
+Netlify® is a registered trademark of Netlify, Inc.  
+Cloudflare® and Cloudflare Pages™ are trademarks of Cloudflare, Inc.  
+WP-CLI® and Gutenberg® are trademarks of the WordPress Foundation.  
+Elementor® is a registered trademark of Elementor Ltd.  
+Divi® is a registered trademark of Elegant Themes, Inc.  
+GitHub® is a registered trademark of GitHub, Inc.  
+YouTube® is a registered trademark of Google LLC.  
+Twitter® is a registered trademark of X Corp.  
+ModernCLI.Dev is owned by Derick Schaefer.
+
+This plugin has not been tested by any of the services, platforms, software projects nor their respective owners.  
+These names and services are referenced solely as examples of where static cache files might be repurposed, used, uploaded, stored, or transmitted.
+
+This plugin is an independent open-source project and is **not endorsed by, affiliated with, or sponsored by** any of the companies or open-source projects mentioned herein.
 ---
 
 == Support ==

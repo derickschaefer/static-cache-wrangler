@@ -264,7 +264,7 @@ wp scg zip
 ### What Doesn't Get Downloaded
 
 - ❌ External CDN assets (Google Fonts, jQuery CDN, etc.) - Links preserved as-is
-- ❌ Third-party embeds (YouTube, Twitter, etc.) - Require internet connection
+- ❌ Third-party embeds (YouTube®, Twitter®, etc.) - Require internet connection
 - ❌ Dynamic content loaded via AJAX/REST API
 - ❌ Assets from different domains (cross-origin)
 
@@ -327,7 +327,7 @@ Deploy the static site to any web server without WordPress dependencies:
 wp scg enable
 wp scg process
 wp scg zip
-# Extract and upload to S3, Netlify, GitHub Pages, etc.
+# Extract and upload to Amazon S3®, Netlify®, GitHub®, etc.
 ```
 
 ## Server Requirements
@@ -502,7 +502,7 @@ add_filter('scg_should_generate', function($should, $url) {
 - Consider hosting environment with adequate disk space for your needs
 
 **Video and Audio Files:**  
-The plugin intentionally does not download video (MP4, WebM) or audio (MP3, WAV) files. These should remain on your WordPress server or external hosting (YouTube, Vimeo, CDN). The static HTML will link to these resources.
+The plugin intentionally does not download video (MP4, WebM) or audio (MP3, WAV) files. These should remain on your WordPress server or external hosting (YouTube, CDN). The static HTML will link to these resources.
 
 
 ## Contributing
@@ -541,6 +541,29 @@ This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
+```
+
+## Trademark Recognition and Legal Disclaimer
+
+```
+All product names, logos, and brands referenced in this plugin and its documentation are property of their respective owners.
+
+NGINX® is a registered trademark of F5, Inc.  
+Amazon S3® and Route 53™ are trademarks of Amazon Technologies, Inc.  
+Netlify® is a registered trademark of Netlify, Inc.  
+Cloudflare® and Cloudflare Pages™ are trademarks of Cloudflare, Inc.  
+WP-CLI® and Gutenberg® are trademarks of the WordPress Foundation.  
+Elementor® is a registered trademark of Elementor Ltd.  
+Divi® is a registered trademark of Elegant Themes, Inc.  
+GitHub® is a registered trademark of GitHub, Inc.  
+YouTube® is a registered trademark of Google LLC.  
+Twitter® is a registered trademark of X Corp.
+ModernCLI.Dev is owned by Derick Schaefer
+
+This plugin has not been tested with any of the services, platforms, software projects, nor their respective owners.
+These names and services are referenced solely as examples of where static cache files might be repurposed, used, uploaded, stored, or transmitted.
+
+This plugin is an independent open-source project and is **not endorsed by, affiliated with, or sponsored by** any of the companies or open-source projects mentioned herein.
 ```
 
 ## Author
