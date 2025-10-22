@@ -1,0 +1,85 @@
+/**
+ * Admin Dashboard Styles for Static Cache Generator
+ * Modern card-based UI styling
+ */
+
+/* Modern card-based UI styling */
+.stcg-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 6px;
+    padding: 20px;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+.stcg-card h3,
+.stcg-panel-title {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #23282d;
+}
+
+.stcg-value {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.1;
+    margin: 4px 0 6px;
+    color: #1d2327;
+}
+
+.stcg-value.stcg-on {
+    color: #46b450;
+}
+
+.stcg-value.stcg-off {
+    color: #dc3232;
+}
+
+.stcg-label {
+    font-size: 13px;
+    color: #646970;
+}
+
+.stcg-panel {
+    margin-top: 20px;
+}
+
+.stcg-ok {
+    color: #46b450;
+    font-weight: 600;
+}
+
+.stcg-bad {
+    color: #dc3232;
+    font-weight: 600;
+}
+
+/* Progress bar styling */
+.stcg-progress {
+    margin: 15px 0;
+    padding: 10px;
+    background: #f0f0f1;
+    border-radius: 4px;
+}
+
+.stcg-progress-bar-outer {
+    background: #fff;
+    height: 20px;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.stcg-progress-bar-inner {
+    background: #2271b1;
+    height: 100%;
+    width: 0%;
+    transition: width .3s;
+}
+
+.stcg-progress-text {
+    margin-top: 6px;
+    font-size: 12px;
+}

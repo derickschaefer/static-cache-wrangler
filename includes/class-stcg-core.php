@@ -11,17 +11,17 @@
 
 if (!defined('ABSPATH')) exit;
 
-class SCG_Core {
+class STCG_Core {
     
     /**
      * Generator instance
-     * @var SCG_Generator
+     * @var STCG_Generator
      */
     private $generator;
     
     /**
      * Asset handler instance
-     * @var SCG_Asset_Handler
+     * @var STCG_Asset_Handler
      */
     private $asset_handler;
     
@@ -34,19 +34,46 @@ class SCG_Core {
     public function init() {
         self::create_directories();
         
-        $this->generator = new SCG_Generator();
-        $this->asset_handler = new SCG_Asset_Handler();
+        $this->generator = new STCG_Generator();
+        $this->asset_handler = new STCG_Asset_Handler();
         
         // Hook into WordPress
         add_action('wp', [$this->generator, 'start_output'], 1);
-        add_action('scg_process_assets', [$this->asset_handler, 'download_queued_assets']);
+        add_action('stcg_process_assets', [$this->asset_handler, 'download_queued_assets']);
         
         // AJAX handlers
-        add_action('wp_ajax_scg_process_pending', [$this->asset_handler, 'ajax_process_pending']);
+        add_action('wp_ajax_stcg_process_pending', [$this->asset_handler, 'ajax_process_pending']);
         
-        // Frontend/admin scripts
-        add_action('admin_footer', [$this, 'admin_footer_script']);
-        add_action('wp_footer', [$this, 'admin_footer_script']);
+        // Enqueue auto-process script on frontend and admin (when needed)
+        add_action('admin_footer', [$this, 'enqueue_auto_process_script']);
+        add_action('wp_footer', [$this, 'enqueue_auto_process_script']);
+    }
+    
+    /**
+     * Enqueue auto-process script for background asset processing
+     */
+    public function enqueue_auto_process_script() {
+        if (!current_user_can('manage_options') || !self::is_enabled()) {
+            return;
+        }
+        
+        $pending = count(get_option('stcg_pending_assets', []));
+        if ($pending === 0) {
+            return;
+        }
+        
+        wp_enqueue_script(
+            'stcg-auto-process',
+            STCG_PLUGIN_URL . 'includes/js/auto-process.js',
+            [],
+            STCG_VERSION,
+            true
+        );
+        
+        wp_localize_script('stcg-auto-process', 'stcgAutoProcess', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('stcg_process')
+        ]);
     }
     
     /**
@@ -69,7 +96,7 @@ class SCG_Core {
      * @return string Absolute path to static directory
      */
     public static function get_static_dir() {
-        return SCG_STATIC_DIR;
+        return STCG_STATIC_DIR;
     }
     
     /**
@@ -78,7 +105,7 @@ class SCG_Core {
      * @return string Absolute path to assets directory
      */
     public static function get_assets_dir() {
-        return SCG_ASSETS_DIR;
+        return STCG_ASSETS_DIR;
     }
     
     /**
@@ -87,7 +114,7 @@ class SCG_Core {
      * @return bool True if enabled
      */
     public static function is_enabled() {
-        return (bool) get_option('scg_enabled', false);
+        return (bool) get_option('stcg_enabled', false);
     }
     
     /**
@@ -113,8 +140,8 @@ class SCG_Core {
                     $count++;
                 }
             }
-	} catch (Exception $e) {
-		scg_log_debug( 'Error counting files: ' . $e->getMessage() );
+        } catch (Exception $e) {
+            stcg_log_debug('Error counting files: ' . $e->getMessage());
         }
         
         return $count;
@@ -147,8 +174,8 @@ class SCG_Core {
                     $size += $file->getSize();
                 }
             }
-	} catch (Exception $e) {
-		scg_log_debug( 'Error calculating size: ' . $e->getMessage() );
+        } catch (Exception $e) {
+            stcg_log_debug('Error calculating size: ' . $e->getMessage());
         }
         
         return $size;
@@ -188,8 +215,8 @@ class SCG_Core {
         }
         
         // Reset options
-        delete_option('scg_pending_assets');
-        delete_option('scg_downloaded_assets');
+        delete_option('stcg_pending_assets');
+        delete_option('stcg_downloaded_assets');
         
         // Recreate directories
         self::create_directories();
@@ -225,7 +252,7 @@ class SCG_Core {
      */
     public static function create_zip() {
         if (!class_exists('ZipArchive')) {
-            scg_log_debug( 'Error: ZipArchive not available' );
+            stcg_log_debug('Error: ZipArchive not available');
             return false;
         }
 
@@ -237,7 +264,7 @@ class SCG_Core {
         $zip = new ZipArchive();
 
         if ($zip->open($zip_file, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            scg_log_debug( 'Error: Could not create ZIP file' );
+            stcg_log_debug('Error: Could not create ZIP file');
             return false;
         }
 
@@ -285,92 +312,7 @@ class SCG_Core {
                 }
             }
         } catch (Exception $e) {
-            scg_log_debug( 'Error adding to ZIP: ' . $e->getMessage() );
+            stcg_log_debug('Error adding to ZIP: ' . $e->getMessage());
         }
-    }
-    
-    /**
-     * Admin footer script for auto-processing
-     *
-     * Outputs JavaScript for automatic asset processing in the background
-     */
-    public function admin_footer_script() {
-        if (!current_user_can('manage_options') || !self::is_enabled()) {
-            return;
-        }
-        
-        $pending = count(get_option('scg_pending_assets', []));
-        if ($pending === 0) {
-            return;
-        }
-        
-        $nonce = wp_create_nonce('scg_process');
-        $ajax_url = admin_url('admin-ajax.php');
-        ?>
-        <script type="text/javascript">
-        window.ssgProcessNow = function() {
-            if (confirm('Process pending assets now? This will download CSS, JS, images, and fonts.')) {
-                processPendingAssets(true);
-            }
-        };
-        
-        (function() {
-            let processing = false;
-            
-            function processPendingAssets(manual = false) {
-                if (processing) {
-                    if (manual) alert('Already processing...');
-                    return;
-                }
-                processing = true;
-                
-                if (manual) {
-                    console.log('SSG: Manually processing assets...');
-                }
-                
-                fetch('<?php echo esc_url($ajax_url); ?>', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams({
-                        action: 'scg_process_pending',
-                        nonce: '<?php echo esc_js($nonce); ?>'
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    processing = false;
-                    console.log('SSG:', data);
-                    
-                    if (data.success && data.data.remaining > 0) {
-                        setTimeout(() => processPendingAssets(manual), 2000);
-                    } else if (data.success && data.data.remaining === 0) {
-                        console.log('SSG: All assets processed!');
-                        if (manual) {
-                            alert('All assets processed successfully!');
-                            location.reload();
-                        }
-                    }
-                })
-                .catch(error => {
-                    processing = false;
-                    console.error('SSG error:', error);
-                    if (manual) {
-                        alert('Error processing assets. Check console for details.');
-                    }
-                });
-            }
-            
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', function() {
-                    setTimeout(() => processPendingAssets(false), 3000);
-                });
-            } else {
-                setTimeout(() => processPendingAssets(false), 3000);
-            }
-        })();
-        </script>
-        <?php
     }
 }

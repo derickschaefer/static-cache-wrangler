@@ -15,20 +15,20 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
 }
 
 // Define plugin constants if not already defined
-if (!defined('SCG_STATIC_DIR')) {
-    define('SCG_STATIC_DIR', WP_CONTENT_DIR . '/cache/_static/');
+if (!defined('STCG_STATIC_DIR')) {
+    define('STCG_STATIC_DIR', WP_CONTENT_DIR . '/cache/_static/');
 }
-if (!defined('SCG_ASSETS_DIR')) {
-    define('SCG_ASSETS_DIR', SCG_STATIC_DIR . 'assets/');
+if (!defined('STCG_ASSETS_DIR')) {
+    define('STCG_ASSETS_DIR', STCG_STATIC_DIR . 'assets/');
 }
 
 /**
  * Delete all plugin options from database
  */
-function scg_delete_options() {
-    delete_option('scg_enabled');
-    delete_option('scg_pending_assets');
-    delete_option('scg_downloaded_assets');
+function stcg_delete_options() {
+    delete_option('stcg_enabled');
+    delete_option('stcg_pending_assets');
+    delete_option('stcg_downloaded_assets');
 }
 
 /**
@@ -39,7 +39,7 @@ function scg_delete_options() {
  * @param string $dir Directory path to delete
  * @return bool True on success, false on failure
  */
-function scg_delete_directory($dir) {
+function stcg_delete_directory($dir) {
     if (!is_dir($dir)) {
         return false;
     }
@@ -62,21 +62,21 @@ function scg_delete_directory($dir) {
 /**
  * Main uninstall routine
  */
-function scg_uninstall() {
+function stcg_uninstall() {
     // Delete all plugin options
-    scg_delete_options();
+    stcg_delete_options();
     
     // Delete static files directory
-    if (is_dir(SCG_STATIC_DIR)) {
-        scg_delete_directory(SCG_STATIC_DIR);
+    if (is_dir(STCG_STATIC_DIR)) {
+        stcg_delete_directory(STCG_STATIC_DIR);
     }
     
     // Clear any scheduled cron events
-    $timestamp = wp_next_scheduled('scg_process_assets');
+    $timestamp = wp_next_scheduled('stcg_process_assets');
     if ($timestamp) {
-        wp_unschedule_event($timestamp, 'scg_process_assets');
+        wp_unschedule_event($timestamp, 'stcg_process_assets');
     }
 }
 
 // Execute uninstall
-scg_uninstall();
+stcg_uninstall();

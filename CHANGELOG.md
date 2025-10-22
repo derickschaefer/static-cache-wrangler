@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.3] - 2025-01-XX
+
+### WordPress.org Compliance
+- **MAJOR:** Changed all PHP prefixes from `SCG_` to `STCG_` (4+ characters)
+- **BREAKING:** All option names changed (`scg_enabled` → `stcg_enabled`)
+- **BREAKING:** All WordPress hooks changed (`scg_process_assets` → `stcg_process_assets`)
+- **IMPORTANT:** WP-CLI commands remain unchanged (`wp scg`)
+
+### Script/Style Enqueuing
+- Extracted inline CSS to `admin/css/admin-style.css`
+- Extracted inline JavaScript to separate files
+- Properly enqueued all scripts and styles
+
+### Migration Notes
+- Static files need to be regenerated
+- Clear all files: `wp scg clear`
+- Re-enable and regenerate
+
 ## [2.0.2] - 2025-01-09
 
 ### WordPress Coding Standards Compliance

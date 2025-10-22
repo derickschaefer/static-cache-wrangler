@@ -11,7 +11,7 @@
 
 if (!defined('ABSPATH')) exit;
 
-class SCG_URL_Helper {
+class STCG_URL_Helper {
     
     /**
      * Get the site URL without trailing slash
@@ -189,11 +189,11 @@ class SCG_URL_Helper {
         
         // Root or homepage
         if ($path === '' || $path === '/') {
-            return SCG_STATIC_DIR . 'index.' . $extension;
+            return STCG_STATIC_DIR . 'index.' . $extension;
         }
         
         // Create directory structure matching URL path
-        $dir = SCG_STATIC_DIR . ltrim($path, '/');
+        $dir = STCG_STATIC_DIR . ltrim($path, '/');
         return $dir . '/index.' . $extension;
     }
 }

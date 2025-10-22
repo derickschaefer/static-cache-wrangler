@@ -11,17 +11,17 @@
 
 if (!defined('ABSPATH')) exit;
 
-class SCG_Generator {
+class STCG_Generator {
     
     /**
      * Asset handler instance
-     * @var SCG_Asset_Handler
+     * @var STCG_Asset_Handler
      */
     private $asset_handler;
     
     /**
      * URL helper instance
-     * @var SCG_URL_Helper
+     * @var STCG_URL_Helper
      */
     private $url_helper;
     
@@ -29,8 +29,8 @@ class SCG_Generator {
      * Constructor - initialize dependencies
      */
     public function __construct() {
-        $this->asset_handler = new SCG_Asset_Handler();
-        $this->url_helper = new SCG_URL_Helper();
+        $this->asset_handler = new STCG_Asset_Handler();
+        $this->url_helper = new STCG_URL_Helper();
     }
     
     /**
@@ -40,7 +40,7 @@ class SCG_Generator {
      */
     public function start_output() {
         // Don't generate static files if disabled
-        if (!SCG_Core::is_enabled()) {
+        if (!STCG_Core::is_enabled()) {
             return;
         }
         
@@ -86,7 +86,7 @@ class SCG_Generator {
         $static_output = $output;
         
         // Process assets asynchronously if enabled
-        if (SCG_ASYNC_ASSETS) {
+        if (STCG_ASYNC_ASSETS) {
             $static_output = $this->rewrite_asset_paths($static_output);
             $assets = $this->extract_asset_urls($output);
             $this->asset_handler->queue_asset_downloads($assets);
@@ -98,19 +98,19 @@ class SCG_Generator {
         // Add metadata and clean up WordPress-specific tags
         $static_output = $this->process_static_html($static_output);
 
-	// Initialize WP_Filesystem
-	global $wp_filesystem;
-	if (empty($wp_filesystem)) {
-	    require_once ABSPATH . 'wp-admin/includes/file.php';
-	    WP_Filesystem();
-	}
+        // Initialize WP_Filesystem
+        global $wp_filesystem;
+        if (empty($wp_filesystem)) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            WP_Filesystem();
+        }
 
-	// Save static file using WP_Filesystem
-	if ($wp_filesystem) {
-	    $wp_filesystem->put_contents($static_file, $static_output, FS_CHMOD_FILE);
-	} else {
-	    scg_log_debug('Failed to initialize WP_Filesystem for saving static file');
-	}
+        // Save static file using WP_Filesystem
+        if ($wp_filesystem) {
+            $wp_filesystem->put_contents($static_file, $static_output, FS_CHMOD_FILE);
+        } else {
+            stcg_log_debug('Failed to initialize WP_Filesystem for saving static file');
+        }
 
         // Return original output unchanged for browser display
         return $output;

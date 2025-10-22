@@ -4,7 +4,7 @@ Tags: static site, html export, offline, wp-cli, performance
 Requires at least: 5.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.0.2
+Stable tag: 2.0.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,12 +14,12 @@ Transform your WordPress site into a fully self-contained static website — fas
 
 **Static Cache Generator** is a *lazy-loading, low-resource static cache and export engine* that automatically creates self-contained HTML versions of your WordPress site.  
 
-It’s perfect for anyone who wants to **preserve, distribute, or accelerate WordPress content** — whether you're archiving a client site, deploying to a CDN, or creating a portable offline version that just works anywhere.
+It's perfect for anyone who wants to **preserve, distribute, or accelerate WordPress content** — whether you're archiving a client site, deploying to a CDN, or creating a portable offline version that just works anywhere.
 
 Unlike traditional static site plugins that require full re-builds or database schema changes, **Static Cache Generator is zero-impact** —  
-* It does not add custom database tables or modify your schema.*  
-* All plugin options, cron jobs, and transients are automatically cleaned up upon uninstall.*  
-* Your WordPress database remains exactly as it was before installation.*
+* It does not add custom database tables or modify your schema.
+* All plugin options, cron jobs, and transients are automatically cleaned up upon uninstall.
+* Your WordPress database remains exactly as it was before installation.
 
 **Perfect for:**
 * Creating fully offline or portable copies of WordPress sites
@@ -85,7 +85,7 @@ Full control without the dashboard:
 Yes — Static Cache Generator captures the final rendered HTML, so it works with any theme, builder, or framework (Elementor®, Divi®, Gutenberg®, etc.).
 
 = Does it use a lot of resources? =
-No — it’s designed as a *lazy loader*, generating static pages only on demand with minimal memory and CPU impact.
+No — it's designed as a *lazy loader*, generating static pages only on demand with minimal memory and CPU impact.
 
 = Does it modify my database? =
 No — it never alters your WordPress database schema or adds tables.  
@@ -95,10 +95,40 @@ All plugin-related options, transients, and scheduled events are automatically r
 Absolutely. The output is plain HTML and assets — deploy it on any web server, CDN, or open it directly in a browser.
 
 = Does it handle dynamic content? =
-Dynamic features like forms, comments, or live feeds won’t function in the static version, but all rendered content and assets are preserved exactly.
+Dynamic features like forms, comments, or live feeds won't function in the static version, but all rendered content and assets are preserved exactly.
 
 = How do I update after making changes? =
 Revisit the updated pages while generation is enabled, or run `wp scg process` to rebuild all static content.
+
+= Can I customize the configuration? =
+
+Yes! You can customize file locations and behavior using constants in `wp-config.php`:
+
+**Change static files location:**
+`define('STCG_STATIC_DIR', WP_CONTENT_DIR . '/my-static-files/');`
+
+**Change assets location:**
+`define('STCG_ASSETS_DIR', WP_CONTENT_DIR . '/my-assets/');`
+
+**Disable async asset processing (process immediately):**
+`define('STCG_ASYNC_ASSETS', false);`
+
+= What if I need advanced customization? =
+
+You can use WordPress filters to customize behavior:
+
+**Exclude specific URLs from generation:**
+`add_filter('stcg_should_generate', function($should, $url) {
+    if (strpos($url, '/private/') !== false) {
+        return false;
+    }
+    return $should;
+}, 10, 2);`
+
+**Modify HTML before saving:**
+`add_filter('stcg_before_save_html', function($html) {
+    return str_replace('</body>', '<footer>Generated: ' . date('Y-m-d') . '</footer></body>', $html);
+});`
 
 ---
 
@@ -112,6 +142,18 @@ Revisit the updated pages while generation is enabled, or run `wp scg process` t
 ---
 
 == Changelog ==
+
+= 2.0.3 =
+* **WordPress.org Compliance Update**
+* Changed all PHP prefixes from SCG_ to STCG_ (4+ character requirement)
+* Properly enqueued all scripts and styles (removed inline code)
+* Extracted CSS to admin/css/admin-style.css
+* Extracted JavaScript to admin/js/admin-script.js and includes/js/auto-process.js
+* WP-CLI commands unchanged for user convenience (still `wp scg`)
+* **BREAKING CHANGE:** Requires clearing and regenerating static files after update
+* All option names changed (scg_enabled → stcg_enabled, etc.)
+* All WordPress hooks changed (scg_process_assets → stcg_process_assets, etc.)
+* See full migration guide on GitHub for technical details
 
 = 2.0.2 =
 * Enhanced stability and performance
@@ -135,8 +177,52 @@ Revisit the updated pages while generation is enabled, or run `wp scg process` t
 
 == Upgrade Notice ==
 
+= 2.0.3 =
+WordPress.org compliance update. BREAKING CHANGE: Clear and regenerate static files after upgrading. All internal prefixes changed to meet WordPress requirements.
+
 = 2.0 =
 Major update with enhanced stability, performance, and compliance. Recommended for all users.
+
+---
+
+== Advanced Configuration ==
+
+### Server Requirements
+
+* **PHP:** 7.4 or higher
+* **WordPress:** 5.0 or higher
+* **PHP Extensions:** ZipArchive (for ZIP export), curl or allow_url_fopen (for asset downloads)
+* **Disk Space:** Varies based on site size (static files = ~1.5x site size)
+* **Permissions:** Write access to `wp-content/cache/`
+
+### Performance Characteristics
+
+* **Generation overhead:** ~50–100 ms/page
+* **Memory:** ~2 MB additional per request
+* **Asset downloads:** Handled asynchronously in background
+
+### Disk Space Considerations
+
+**Typical Usage:**
+* Small site (10-50 pages): 50-200 MB
+* Medium site (100-500 pages): 200 MB - 1 GB  
+* Large site (1000+ pages): 1-5 GB
+
+Monitor disk usage via Settings → Static Cache or `wp scg status`.
+
+To reduce disk usage, exclude large pages:
+`add_filter('stcg_should_generate', function($should, $url) {
+    if (strpos($url, '/gallery/') !== false) {
+        return false;
+    }
+    return $should;
+}, 10, 2);`
+
+### What Gets Downloaded
+
+✅ CSS files, JavaScript files, Images (all formats), Fonts, Favicons, Responsive images (srcset)
+
+❌ External CDN assets (preserved as-is), Third-party embeds (YouTube, Twitter), Video/audio files (intentionally excluded to save space)
 
 ---
 
@@ -151,33 +237,8 @@ Major update with enhanced stability, performance, and compliance. Recommended f
 
 ---
 
-== Technical Details ==
-
-**Requirements**
-* PHP 7.4+
-* WordPress 5.0+
-* ZipArchive PHP extension
-* Write access to `wp-content/cache/`
-
-**Performance**
-* Generation overhead: ~50–100 ms/page
-* Memory: ~2 MB additional per request
-* Asset downloads handled asynchronously
-
-**Architecture**
-* Visitor loads page → HTML captured
-* Plugin rewrites URLs and queues assets
-* Assets downloaded → stored locally
-* Static file saved with relative links
-
-**Database Impact**
-* No custom tables or schema modifications
-* Uses native WordPress options and transients
-* All plugin data and scheduled tasks removed automatically on uninstall
-
----
-
 == Trademark Recognition and Legal Disclaimer ==
+
 All product names, logos, and brands referenced in this plugin and its documentation are property of their respective owners.
 
 NGINX® is a registered trademark of F5, Inc.  
@@ -196,13 +257,14 @@ This plugin has not been tested by any of the services, platforms, software proj
 These names and services are referenced solely as examples of where static cache files might be repurposed, used, uploaded, stored, or transmitted.
 
 This plugin is an independent open-source project and is **not endorsed by, affiliated with, or sponsored by** any of the companies or open-source projects mentioned herein.
+
 ---
 
 == Support ==
 
 For issues, requests, and documentation, visit:  
-[GitHub – Static Cache Generator](https://github.com/yourusername/static-cache-generator)  
-[Documentation & Guides](https://github.com/yourusername/static-cache-generator/wiki)
+[GitHub – Static Cache Generator](https://github.com/derickschaefer/static-cache-generator)
+[Documentation & Guides](https://moderncli.dev/code/static-cache-generator/)
 
 ---
 

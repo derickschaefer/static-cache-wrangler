@@ -204,13 +204,13 @@ The plugin works with sensible defaults, but you can customize behavior:
 
 ```php
 // Change static files location
-define('SCG_STATIC_DIR', WP_CONTENT_DIR . '/my-static-files/');
+define('STCG_STATIC_DIR', WP_CONTENT_DIR . '/my-static-files/');
 
 // Change assets location
-define('SCG_ASSETS_DIR', WP_CONTENT_DIR . '/my-assets/');
+define('STCG_ASSETS_DIR', WP_CONTENT_DIR . '/my-assets/');
 
 // Disable async asset processing (process immediately)
-define('SCG_ASYNC_ASSETS', false);
+define('STCG_ASYNC_ASSETS', false);
 ```
 ## Asset Handling
 

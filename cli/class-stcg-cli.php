@@ -11,7 +11,7 @@
 
 if (!defined('ABSPATH')) exit;
 
-class SCG_CLI {
+class STCG_CLI {
     
     /**
      * Enable static site generation
@@ -23,7 +23,7 @@ class SCG_CLI {
      * @when after_wp_load
      */
     public function enable() {
-        update_option('scg_enabled', true);
+        update_option('stcg_enabled', true);
         WP_CLI::success("Static site generation enabled.");
     }
     
@@ -37,7 +37,7 @@ class SCG_CLI {
      * @when after_wp_load
      */
     public function disable() {
-        update_option('scg_enabled', false);
+        update_option('stcg_enabled', false);
         WP_CLI::success("Static site generation disabled.");
     }
     
@@ -51,20 +51,20 @@ class SCG_CLI {
      * @when after_wp_load
      */
     public function status() {
-        $enabled = SCG_Core::is_enabled();
+        $enabled = STCG_Core::is_enabled();
         $status = $enabled ? WP_CLI::colorize('%GEnabled%N') : WP_CLI::colorize('%RDisabled%N');
         WP_CLI::log("Static Generation: $status");
         
         if ($enabled) {
-            $count = SCG_Core::count_static_files();
-            $static_size = SCG_Core::format_bytes(SCG_Core::get_directory_size());
+            $count = STCG_Core::count_static_files();
+            $static_size = STCG_Core::format_bytes(STCG_Core::get_directory_size());
             
             WP_CLI::log("Static Files: $count");
             WP_CLI::log("Total Size: $static_size");
-            WP_CLI::log("Pending Assets: " . count(get_option('scg_pending_assets', [])));
-            WP_CLI::log("Downloaded Assets: " . count(get_option('scg_downloaded_assets', [])));
-            WP_CLI::log("Static Directory: " . SCG_Core::get_static_dir());
-            WP_CLI::log("Assets Directory: " . SCG_Core::get_assets_dir());
+            WP_CLI::log("Pending Assets: " . count(get_option('stcg_pending_assets', [])));
+            WP_CLI::log("Downloaded Assets: " . count(get_option('stcg_downloaded_assets', [])));
+            WP_CLI::log("Static Directory: " . STCG_Core::get_static_dir());
+            WP_CLI::log("Assets Directory: " . STCG_Core::get_assets_dir());
         }
     }
     
@@ -81,7 +81,7 @@ class SCG_CLI {
      */
     public function process() {
         WP_CLI::log("Processing pending assets...");
-        $pending = get_option('scg_pending_assets', []);
+        $pending = get_option('stcg_pending_assets', []);
         $count = count($pending);
         
         if ($count === 0) {
@@ -93,7 +93,7 @@ class SCG_CLI {
         
         $progress = \WP_CLI\Utils\make_progress_bar('Downloading assets', $count);
         
-        $asset_handler = new SCG_Asset_Handler();
+        $asset_handler = new STCG_Asset_Handler();
         $downloaded = 0;
         $failed = 0;
         
@@ -112,9 +112,9 @@ class SCG_CLI {
         
         // Update the pending list
         if (empty($pending)) {
-            delete_option('scg_pending_assets');
+            delete_option('stcg_pending_assets');
         } else {
-            update_option('scg_pending_assets', array_values($pending), false);
+            update_option('stcg_pending_assets', array_values($pending), false);
         }
         
         WP_CLI::success("Downloaded $downloaded assets successfully!");
@@ -136,14 +136,14 @@ class SCG_CLI {
      * @when after_wp_load
      */
     public function clear() {
-        $static_dir = SCG_Core::get_static_dir();
+        $static_dir = STCG_Core::get_static_dir();
         
         if (!is_dir($static_dir)) {
             WP_CLI::warning("Static directory doesn't exist.");
             return;
         }
         
-        SCG_Core::clear_all_files();
+        STCG_Core::clear_all_files();
         WP_CLI::success("All static files cleared.");
     }
     
@@ -166,20 +166,20 @@ class SCG_CLI {
      * @when after_wp_load
      */
     public function zip($args, $assoc_args) {
-        $count = SCG_Core::count_static_files();
+        $count = STCG_Core::count_static_files();
         
         if ($count === 0) {
             WP_CLI::error("No static files to package. Enable generation and browse your site first.");
         }
         
         WP_CLI::log("Creating ZIP archive...");
-        $zip_file = SCG_Core::create_zip();
+        $zip_file = STCG_Core::create_zip();
         
         if (!$zip_file || !file_exists($zip_file)) {
             WP_CLI::error("Failed to create ZIP file.");
         }
         
-        $size = SCG_Core::format_bytes(filesize($zip_file));
+        $size = STCG_Core::format_bytes(filesize($zip_file));
         
         // Handle custom output path
         if (isset($assoc_args['output'])) {

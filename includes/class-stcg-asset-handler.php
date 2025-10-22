@@ -11,11 +11,11 @@
 
 if (!defined('ABSPATH')) exit;
 
-class SCG_Asset_Handler {
+class STCG_Asset_Handler {
     
     /**
      * URL helper instance
-     * @var SCG_URL_Helper
+     * @var STCG_URL_Helper
      */
     private $url_helper;
     
@@ -23,7 +23,7 @@ class SCG_Asset_Handler {
      * Constructor - initialize dependencies
      */
     public function __construct() {
-        $this->url_helper = new SCG_URL_Helper();
+        $this->url_helper = new STCG_URL_Helper();
     }
     
     /**
@@ -36,16 +36,16 @@ class SCG_Asset_Handler {
             return;
         }
         
-        scg_log_debug('Queueing ' . count($assets) . ' assets');
+        stcg_log_debug('Queueing ' . count($assets) . ' assets');
         
         // Merge with existing pending assets
-        $existing = get_option('scg_pending_assets', []);
+        $existing = get_option('stcg_pending_assets', []);
         $merged = array_unique(array_merge($existing, $assets));
-        update_option('scg_pending_assets', $merged, false);
+        update_option('stcg_pending_assets', $merged, false);
         
         // Schedule background processing if not already scheduled
-        if (!wp_next_scheduled('scg_process_assets')) {
-            wp_schedule_single_event(time() + 10, 'scg_process_assets');
+        if (!wp_next_scheduled('stcg_process_assets')) {
+            wp_schedule_single_event(time() + 10, 'stcg_process_assets');
         }
     }
     
@@ -55,7 +55,7 @@ class SCG_Asset_Handler {
      * Downloads assets in batches to avoid server overload
      */
     public function download_queued_assets() {
-        $assets = get_option('scg_pending_assets', []);
+        $assets = get_option('stcg_pending_assets', []);
         
         if (empty($assets)) {
             return;
@@ -68,8 +68,8 @@ class SCG_Asset_Handler {
         foreach ($assets as $key => $url) {
             if ($processed >= $batch_size) {
                 // Schedule next batch
-                if (!wp_next_scheduled('scg_process_assets')) {
-                    wp_schedule_single_event(time() + 30, 'scg_process_assets');
+                if (!wp_next_scheduled('stcg_process_assets')) {
+                    wp_schedule_single_event(time() + 30, 'stcg_process_assets');
                 }
                 break;
             }
@@ -83,13 +83,13 @@ class SCG_Asset_Handler {
         
         // Update pending assets list
         if (empty($assets)) {
-            delete_option('scg_pending_assets');
+            delete_option('stcg_pending_assets');
         } else {
-            update_option('scg_pending_assets', array_values($assets), false);
+            update_option('stcg_pending_assets', array_values($assets), false);
             
             // Schedule next batch if assets remain
-            if (!wp_next_scheduled('scg_process_assets')) {
-                wp_schedule_single_event(time() + 30, 'scg_process_assets');
+            if (!wp_next_scheduled('stcg_process_assets')) {
+                wp_schedule_single_event(time() + 30, 'stcg_process_assets');
             }
         }
     }
@@ -100,13 +100,13 @@ class SCG_Asset_Handler {
      * Allows admin to trigger asset processing immediately
      */
     public function ajax_process_pending() {
-        check_ajax_referer('scg_process', 'nonce');
+        check_ajax_referer('stcg_process', 'nonce');
         
         if (!current_user_can('manage_options')) {
             wp_send_json_error('Unauthorized');
         }
         
-        $assets = get_option('scg_pending_assets', []);
+        $assets = get_option('stcg_pending_assets', []);
         $batch_size = 5;
         $processed = 0;
         $failed = 0;
@@ -129,9 +129,9 @@ class SCG_Asset_Handler {
         
         // Update pending assets
         if (empty($assets)) {
-            delete_option('scg_pending_assets');
+            delete_option('stcg_pending_assets');
         } else {
-            update_option('scg_pending_assets', array_values($assets), false);
+            update_option('stcg_pending_assets', array_values($assets), false);
         }
         
         $remaining = count($assets);
@@ -153,10 +153,10 @@ class SCG_Asset_Handler {
      */
     public function download_to_assets($url, $retry = 0) {
         $filename = $this->url_helper->filename_from_url($url);
-        $dest = SCG_ASSETS_DIR . $filename;
+        $dest = STCG_ASSETS_DIR . $filename;
 
         // Skip if already downloaded
-        $downloaded = get_option('scg_downloaded_assets', []);
+        $downloaded = get_option('stcg_downloaded_assets', []);
         if (in_array($filename, $downloaded) && file_exists($dest)) {
             return $dest;
         }
@@ -171,14 +171,14 @@ class SCG_Asset_Handler {
                     sleep(1);
                     return $this->download_to_assets($url, $retry + 1);
                 }
-                scg_log_debug('Failed to download: ' . $url);
+                stcg_log_debug('Failed to download: ' . $url);
                 return false;
             }
             
             // Check HTTP status code
             $code = wp_remote_retrieve_response_code($response);
             if ($code < 200 || $code > 299) {
-                scg_log_debug('HTTP ' . $code . ' for: ' . $url);
+                stcg_log_debug('HTTP ' . $code . ' for: ' . $url);
                 return false;
             }
             
@@ -209,19 +209,19 @@ class SCG_Asset_Handler {
             if ($wp_filesystem) {
                 $result = $wp_filesystem->put_contents($dest, $body, FS_CHMOD_FILE);
                 if ($result === false) {
-                    scg_log_debug('Failed to save asset: ' . $filename);
+                    stcg_log_debug('Failed to save asset: ' . $filename);
                     return false;
                 } else {
-                    scg_log_debug('Successfully saved asset: ' . $filename);
+                    stcg_log_debug('Successfully saved asset: ' . $filename);
                 }
             } else {
-                scg_log_debug('Failed to initialize WP_Filesystem for saving asset: ' . $filename);
+                stcg_log_debug('Failed to initialize WP_Filesystem for saving asset: ' . $filename);
                 return false;
             }
             
             // Mark as downloaded
             $downloaded[] = $filename;
-            update_option('scg_downloaded_assets', array_unique($downloaded), false);
+            update_option('stcg_downloaded_assets', array_unique($downloaded), false);
         }
 
         return $dest;

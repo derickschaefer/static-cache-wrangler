@@ -11,18 +11,63 @@
 
 if (!defined('ABSPATH')) exit;
 
-class SCG_Admin {
+class STCG_Admin {
     
     /**
      * Initialize admin functionality
      *
-     * Registers admin menu and hooks for form processing
+     * Registers admin menu, hooks, and enqueues scripts/styles
      */
     public function init() {
         add_action('admin_menu', [$this, 'add_menu']);
-        add_action('admin_post_scg_toggle', [$this, 'handle_toggle']);
-        add_action('admin_post_scg_clear', [$this, 'handle_clear']);
-        add_action('admin_post_scg_download', [$this, 'handle_download']);
+        add_action('admin_post_stcg_toggle', [$this, 'handle_toggle']);
+        add_action('admin_post_stcg_clear', [$this, 'handle_clear']);
+        add_action('admin_post_stcg_download', [$this, 'handle_download']);
+        add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
+    }
+    
+    /**
+     * Enqueue admin scripts and styles
+     *
+     * @param string $hook Current admin page hook
+     */
+    public function enqueue_admin_assets($hook) {
+        // Only load on our settings page
+        if ($hook !== 'toplevel_page_static-cache-generator') {
+            return;
+        }
+        
+        // Enqueue admin CSS
+        wp_enqueue_style(
+            'stcg-admin-style',
+            STCG_PLUGIN_URL . 'admin/css/admin-style.css',
+            [],
+            STCG_VERSION
+        );
+        
+        // Enqueue admin JS
+        wp_enqueue_script(
+            'stcg-admin-script',
+            STCG_PLUGIN_URL . 'admin/js/admin-script.js',
+            ['jquery'],
+            STCG_VERSION,
+            true
+        );
+        
+        // Localize script with data
+        $pending_assets = get_option('stcg_pending_assets', []);
+        $pending_count = is_array($pending_assets) ? count($pending_assets) : 0;
+        
+        wp_localize_script('stcg-admin-script', 'stcgAdmin', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('stcg_process'),
+            'pendingCount' => $pending_count,
+            'i18n' => [
+                'assetsProcessed' => __('assets processed', 'static-cache-generator'),
+                'complete' => __('Complete!', 'static-cache-generator'),
+                'errorProcessing' => __('Error processing assets. Please try again.', 'static-cache-generator'),
+            ]
+        ]);
     }
     
     /**
@@ -52,7 +97,7 @@ class SCG_Admin {
             wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'static-cache-generator'));
         }
         
-        require_once SCG_PLUGIN_DIR . 'admin/views/admin-page.php';
+        require_once STCG_PLUGIN_DIR . 'admin/views/admin-page.php';
     }
     
     /**
@@ -67,11 +112,11 @@ class SCG_Admin {
         }
         
         // Verify nonce for security
-        check_admin_referer('scg_toggle_action', 'scg_toggle_nonce');
+        check_admin_referer('stcg_toggle_action', 'stcg_toggle_nonce');
         
         // Sanitize and validate the enable parameter
         $enable = isset($_POST['enable']) && $_POST['enable'] === '1';
-        update_option('scg_enabled', $enable);
+        update_option('stcg_enabled', $enable);
         
         // Redirect with success message
         $message = $enable ? 'enabled' : 'disabled';
@@ -92,12 +137,12 @@ class SCG_Admin {
      */
     public function handle_clear() {
         // Verify user permissions and nonce
-        if (!current_user_can('manage_options') || !check_admin_referer('scg_clear_action')) {
+        if (!current_user_can('manage_options') || !check_admin_referer('stcg_clear_action')) {
             wp_die(esc_html__('You are not allowed to perform this action.', 'static-cache-generator'));
         }
         
         // Clear all static files
-        SCG_Core::clear_all_files();
+        STCG_Core::clear_all_files();
         
         // Redirect with success message
         wp_safe_redirect(
@@ -117,12 +162,12 @@ class SCG_Admin {
      */
     public function handle_download() {
         // Verify user permissions and nonce
-        if (!current_user_can('manage_options') || !check_admin_referer('scg_download_action')) {
+        if (!current_user_can('manage_options') || !check_admin_referer('stcg_download_action')) {
             wp_die(esc_html__('You are not allowed to perform this action.', 'static-cache-generator'));
         }
 
         // Create the ZIP file
-        $zip_file = SCG_Core::create_zip();
+        $zip_file = STCG_Core::create_zip();
         
         // Serve the file if it was created successfully
         if ($zip_file && file_exists($zip_file)) {
