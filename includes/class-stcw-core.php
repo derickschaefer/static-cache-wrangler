@@ -1,27 +1,27 @@
 <?php
 /**
- * Core functionality for Static Cache Generator
+ * Core functionality for Static Cache Wrangler
  *
  * Handles initialization, directory management, file operations,
  * and coordination between components.
  *
- * @package StaticCacheGenerator
+ * @package StaticCacheWrangler
  * @since 2.0
  */
 
 if (!defined('ABSPATH')) exit;
 
-class STCG_Core {
+class STCW_Core {
     
     /**
      * Generator instance
-     * @var STCG_Generator
+     * @var STCW_Generator
      */
     private $generator;
     
     /**
      * Asset handler instance
-     * @var STCG_Asset_Handler
+     * @var STCW_Asset_Handler
      */
     private $asset_handler;
     
@@ -34,15 +34,15 @@ class STCG_Core {
     public function init() {
         self::create_directories();
         
-        $this->generator = new STCG_Generator();
-        $this->asset_handler = new STCG_Asset_Handler();
+        $this->generator = new STCW_Generator();
+        $this->asset_handler = new STCW_Asset_Handler();
         
         // Hook into WordPress
         add_action('wp', [$this->generator, 'start_output'], 1);
-        add_action('stcg_process_assets', [$this->asset_handler, 'download_queued_assets']);
+        add_action('stcw_process_assets', [$this->asset_handler, 'download_queued_assets']);
         
         // AJAX handlers
-        add_action('wp_ajax_stcg_process_pending', [$this->asset_handler, 'ajax_process_pending']);
+        add_action('wp_ajax_stcw_process_pending', [$this->asset_handler, 'ajax_process_pending']);
         
         // Enqueue auto-process script on frontend and admin (when needed)
         add_action('admin_footer', [$this, 'enqueue_auto_process_script']);
@@ -57,22 +57,22 @@ class STCG_Core {
             return;
         }
         
-        $pending = count(get_option('stcg_pending_assets', []));
+        $pending = count(get_option('stcw_pending_assets', []));
         if ($pending === 0) {
             return;
         }
         
         wp_enqueue_script(
-            'stcg-auto-process',
-            STCG_PLUGIN_URL . 'includes/js/auto-process.js',
+            'stcw-auto-process',
+            STCW_PLUGIN_URL . 'includes/js/auto-process.js',
             [],
-            STCG_VERSION,
+            STCW_VERSION,
             true
         );
         
-        wp_localize_script('stcg-auto-process', 'stcgAutoProcess', [
+        wp_localize_script('stcw-auto-process', 'stcwAutoProcess', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('stcg_process')
+            'nonce' => wp_create_nonce('stcw_process')
         ]);
     }
     
@@ -96,7 +96,7 @@ class STCG_Core {
      * @return string Absolute path to static directory
      */
     public static function get_static_dir() {
-        return STCG_STATIC_DIR;
+        return STCW_STATIC_DIR;
     }
     
     /**
@@ -105,7 +105,7 @@ class STCG_Core {
      * @return string Absolute path to assets directory
      */
     public static function get_assets_dir() {
-        return STCG_ASSETS_DIR;
+        return STCW_ASSETS_DIR;
     }
     
     /**
@@ -114,7 +114,7 @@ class STCG_Core {
      * @return bool True if enabled
      */
     public static function is_enabled() {
-        return (bool) get_option('stcg_enabled', false);
+        return (bool) get_option('stcw_enabled', false);
     }
     
     /**
@@ -141,7 +141,7 @@ class STCG_Core {
                 }
             }
         } catch (Exception $e) {
-            stcg_log_debug('Error counting files: ' . $e->getMessage());
+            stcw_log_debug('Error counting files: ' . $e->getMessage());
         }
         
         return $count;
@@ -175,7 +175,7 @@ class STCG_Core {
                 }
             }
         } catch (Exception $e) {
-            stcg_log_debug('Error calculating size: ' . $e->getMessage());
+            stcw_log_debug('Error calculating size: ' . $e->getMessage());
         }
         
         return $size;
@@ -215,8 +215,8 @@ class STCG_Core {
         }
         
         // Reset options
-        delete_option('stcg_pending_assets');
-        delete_option('stcg_downloaded_assets');
+        delete_option('stcw_pending_assets');
+        delete_option('stcw_downloaded_assets');
         
         // Recreate directories
         self::create_directories();
@@ -252,7 +252,7 @@ class STCG_Core {
      */
     public static function create_zip() {
         if (!class_exists('ZipArchive')) {
-            stcg_log_debug('Error: ZipArchive not available');
+            stcw_log_debug('Error: ZipArchive not available');
             return false;
         }
 
@@ -264,7 +264,7 @@ class STCG_Core {
         $zip = new ZipArchive();
 
         if ($zip->open($zip_file, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            stcg_log_debug('Error: Could not create ZIP file');
+            stcw_log_debug('Error: Could not create ZIP file');
             return false;
         }
 
@@ -312,7 +312,7 @@ class STCG_Core {
                 }
             }
         } catch (Exception $e) {
-            stcg_log_debug('Error adding to ZIP: ' . $e->getMessage());
+            stcw_log_debug('Error adding to ZIP: ' . $e->getMessage());
         }
     }
 }

@@ -1,12 +1,12 @@
 <?php
 /**
- * Plugin Name: Static Cache Generator
- * Plugin URI: https://moderncli.dev/code/static-cache-generator/
+ * Plugin Name: Static Cache Wrangler
+ * Plugin URI: https://moderncli.dev/code/static-cache-wrangler/
  * Description: Generate static HTML files with fully local CSS/JS/Images/Fonts
- * Version: 2.0.3
+ * Version: 2.0.4
  * Author: Derick Schaefer
  * Author URI: https://moderncli.dev/author/
- * Text Domain: static-cache-generator
+ * Text Domain: static-cache-wrangler
  * Requires at least: 5.0
  * Requires PHP: 7.4
  * License: GPL v2 or later
@@ -16,24 +16,24 @@
 if (!defined('ABSPATH')) exit;
 
 // Plugin constants
-define('STCG_VERSION', '2.0.3');
-define('STCG_PLUGIN_DIR', plugin_dir_path(__FILE__));
-define('STCG_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('STCG_STATIC_DIR', WP_CONTENT_DIR . '/cache/_static/');
-define('STCG_ASSETS_DIR', STCG_STATIC_DIR . 'assets/');
-define('STCG_ASYNC_ASSETS', true);
+define('STCW_VERSION', '2.0.4');
+define('STCW_PLUGIN_DIR', plugin_dir_path(__FILE__));
+define('STCW_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('STCW_STATIC_DIR', WP_CONTENT_DIR . '/cache/_static/');
+define('STCW_ASSETS_DIR', STCW_STATIC_DIR . 'assets/');
+define('STCW_ASYNC_ASSETS', true);
 
 // Autoload classes
 spl_autoload_register(function($class) {
-    if (strpos($class, 'STCG_') !== 0) {
+    if (strpos($class, 'STCW_') !== 0) {
         return;
     }
     
     $class_file = strtolower(str_replace('_', '-', $class));
     $paths = [
-        STCG_PLUGIN_DIR . 'includes/',
-        STCG_PLUGIN_DIR . 'admin/',
-        STCG_PLUGIN_DIR . 'cli/',
+        STCW_PLUGIN_DIR . 'includes/',
+        STCW_PLUGIN_DIR . 'admin/',
+        STCW_PLUGIN_DIR . 'cli/',
     ];
     
     foreach ($paths as $path) {
@@ -46,49 +46,49 @@ spl_autoload_register(function($class) {
 });
 
 // Load logger utility
-require_once STCG_PLUGIN_DIR . 'includes/stcg-logger.php';
+require_once STCW_PLUGIN_DIR . 'includes/stcw-logger.php';
 
 /**
  * Initialize plugin
  */
-function stcg_init() {
+function stcw_init() {
     // Core functionality
-    $core = new STCG_Core();
+    $core = new STCW_Core();
     $core->init();
     
     // Admin interface
     if (is_admin()) {
-        $admin = new STCG_Admin();
+        $admin = new STCW_Admin();
         $admin->init();
     }
     
     // Admin bar (frontend and backend)
     if (current_user_can('manage_options')) {
-        $admin_bar = new STCG_Admin_Bar();
+        $admin_bar = new STCW_Admin_Bar();
         $admin_bar->init();
     }
     
-    // WP-CLI (keep command as 'scg')
+    // WP-CLI (keep command as 'scw')
     if (defined('WP_CLI') && WP_CLI) {
-        WP_CLI::add_command('scg', 'STCG_CLI');
+        WP_CLI::add_command('scw', 'STCW_CLI');
     }
 }
-add_action('plugins_loaded', 'stcg_init');
+add_action('plugins_loaded', 'stcw_init');
 
 /**
  * Add a Settings link on the Plugins page
  */
-function stcg_add_settings_link($links) {
-    $settings_url = admin_url('admin.php?page=static-cache-generator');
-    $settings_link = '<a href="' . esc_url($settings_url) . '">' . esc_html__('Settings', 'static-cache-generator') . '</a>';
+function stcw_add_settings_link($links) {
+    $settings_url = admin_url('admin.php?page=static-cache-wrangler');
+    $settings_link = '<a href="' . esc_url($settings_url) . '">' . esc_html__('Settings', 'static-cache-wrangler') . '</a>';
     array_unshift($links, $settings_link);
     return $links;
 }
-add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'stcg_add_settings_link');
+add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'stcw_add_settings_link');
 
 /**
  * Activation hook
  */
 register_activation_hook(__FILE__, function() {
-    STCG_Core::create_directories();
+    STCW_Core::create_directories();
 });

@@ -5,13 +5,13 @@
  * Provides utility methods for URL parsing, path generation,
  * and filename extraction for static site generation.
  *
- * @package StaticCacheGenerator
+ * @package StaticCacheWrangler
  * @since 2.0
  */
 
 if (!defined('ABSPATH')) exit;
 
-class STCG_URL_Helper {
+class STCW_URL_Helper {
     
     /**
      * Get the site URL without trailing slash
@@ -189,11 +189,11 @@ class STCG_URL_Helper {
         
         // Root or homepage
         if ($path === '' || $path === '/') {
-            return STCG_STATIC_DIR . 'index.' . $extension;
+            return STCW_STATIC_DIR . 'index.' . $extension;
         }
         
         // Create directory structure matching URL path
-        $dir = STCG_STATIC_DIR . ltrim($path, '/');
+        $dir = STCW_STATIC_DIR . ltrim($path, '/');
         return $dir . '/index.' . $extension;
     }
 }

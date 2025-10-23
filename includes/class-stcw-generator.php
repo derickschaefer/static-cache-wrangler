@@ -5,23 +5,23 @@
  * Captures WordPress output, processes HTML, extracts assets,
  * and saves static versions of pages.
  *
- * @package StaticCacheGenerator
+ * @package StaticCacheWrangler
  * @since 2.0
  */
 
 if (!defined('ABSPATH')) exit;
 
-class STCG_Generator {
+class STCW_Generator {
     
     /**
      * Asset handler instance
-     * @var STCG_Asset_Handler
+     * @var STCW_Asset_Handler
      */
     private $asset_handler;
     
     /**
      * URL helper instance
-     * @var STCG_URL_Helper
+     * @var STCW_URL_Helper
      */
     private $url_helper;
     
@@ -29,8 +29,8 @@ class STCG_Generator {
      * Constructor - initialize dependencies
      */
     public function __construct() {
-        $this->asset_handler = new STCG_Asset_Handler();
-        $this->url_helper = new STCG_URL_Helper();
+        $this->asset_handler = new STCW_Asset_Handler();
+        $this->url_helper = new STCW_URL_Helper();
     }
     
     /**
@@ -40,7 +40,7 @@ class STCG_Generator {
      */
     public function start_output() {
         // Don't generate static files if disabled
-        if (!STCG_Core::is_enabled()) {
+        if (!STCW_Core::is_enabled()) {
             return;
         }
         
@@ -86,7 +86,7 @@ class STCG_Generator {
         $static_output = $output;
         
         // Process assets asynchronously if enabled
-        if (STCG_ASYNC_ASSETS) {
+        if (STCW_ASYNC_ASSETS) {
             $static_output = $this->rewrite_asset_paths($static_output);
             $assets = $this->extract_asset_urls($output);
             $this->asset_handler->queue_asset_downloads($assets);
@@ -109,7 +109,7 @@ class STCG_Generator {
         if ($wp_filesystem) {
             $wp_filesystem->put_contents($static_file, $static_output, FS_CHMOD_FILE);
         } else {
-            stcg_log_debug('Failed to initialize WP_Filesystem for saving static file');
+            stcw_log_debug('Failed to initialize WP_Filesystem for saving static file');
         }
 
         // Return original output unchanged for browser display

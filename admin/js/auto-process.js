@@ -1,9 +1,9 @@
 /**
- * Auto-processing JavaScript for Static Cache Generator
+ * Auto-processing JavaScript for Static Cache Wrangler
  * Handles background asset processing in admin and frontend
  */
 
-window.stcgProcessNow = function() {
+window.stcwProcessNow = function() {
     if (confirm('Process pending assets now? This will download CSS, JS, images, and fonts.')) {
         processPendingAssets(true);
     }
@@ -20,28 +20,28 @@ window.stcgProcessNow = function() {
         processing = true;
         
         if (manual) {
-            console.log('STCG: Manually processing assets...');
+            console.log('STCW: Manually processing assets...');
         }
         
-        fetch(stcgAutoProcess.ajaxUrl, {
+        fetch(stcwAutoProcess.ajaxUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
             body: new URLSearchParams({
-                action: 'stcg_process_pending',
-                nonce: stcgAutoProcess.nonce
+                action: 'stcw_process_pending',
+                nonce: stcwAutoProcess.nonce
             })
         })
         .then(response => response.json())
         .then(data => {
             processing = false;
-            console.log('STCG:', data);
+            console.log('STCW:', data);
             
             if (data.success && data.data.remaining > 0) {
                 setTimeout(() => processPendingAssets(manual), 2000);
             } else if (data.success && data.data.remaining === 0) {
-                console.log('STCG: All assets processed!');
+                console.log('STCW: All assets processed!');
                 if (manual) {
                     alert('All assets processed successfully!');
                     location.reload();
@@ -50,7 +50,7 @@ window.stcgProcessNow = function() {
         })
         .catch(error => {
             processing = false;
-            console.error('STCG error:', error);
+            console.error('STCW error:', error);
             if (manual) {
                 alert('Error processing assets. Check console for details.');
             }

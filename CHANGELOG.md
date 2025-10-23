@@ -2,13 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.3] - 2025-01-XX
+## [2.0.4] - 2025-10-22
+
+### Major WordPress.org Compliance & Refactor Release
+- **MAJOR:** Comprehensive compliance overhaul aligning with WordPress.org Plugin Directory and Coding Standards.
+- **RENAME:** Plugin slug, text domain, and directory changed from `static-cache-generator` → `static-cache-wrangler` to meet naming and trademark requirements.
+- **NAMESPACE:** All internal class and function prefixes updated from `STCG` → `STCW` (4+ character namespace compliance).
+- **I18N:** Unified text domains and translation calls across all PHP files for full localization validation.
+- **STRUCTURE:** Updated folder structure, includes, and autoload paths for modern compatibility.
+- **ADMIN UI:** Refactored admin views and templates for cleaner markup, translation readiness, and better accessibility.
+- **CLI:** Confirmed namespace and command base as `scw` (formerly `scg`), removed legacy aliases for clarity.
+- **REPO:** Updated all GitHub references, assets, and documentation links to reflect the new canonical project name.
+- **PACKAGING:** Cleaned distribution process and `.zip` exports to exclude development assets, node_modules, vendor directories, and internal build scripts.
+
+### Migration Notes
+- **BREAKING:** Sites upgrading from `Static Cache Generator` must deactivate and remove the old plugin before activating `Static Cache Wrangler`.
+- Existing static files should be cleared and regenerated for full compatibility.
+- Command reference:  
+  ```bash
+  wp scw clear
+  wp scw enable
+  wp scw process
+
+## [2.0.3] - 2025-10-18
 
 ### WordPress.org Compliance
-- **MAJOR:** Changed all PHP prefixes from `SCG_` to `STCG_` (4+ characters)
-- **BREAKING:** All option names changed (`scg_enabled` → `stcg_enabled`)
-- **BREAKING:** All WordPress hooks changed (`scg_process_assets` → `stcg_process_assets`)
-- **IMPORTANT:** WP-CLI commands remain unchanged (`wp scg`)
+- **MAJOR:** Changed all PHP prefixes from `SCG_` to `STCW_` (4+ characters)
+- **BREAKING:** All option names changed (`scw_enabled` → `stcw_enabled`)
+- **BREAKING:** All WordPress hooks changed (`scw_process_assets` → `stcw_process_assets`)
+- **IMPORTANT:** WP-CLI commands remain unchanged (`wp scw`)
 
 ### Script/Style Enqueuing
 - Extracted inline CSS to `admin/css/admin-style.css`
@@ -17,10 +39,10 @@ All notable changes to this project will be documented in this file.
 
 ### Migration Notes
 - Static files need to be regenerated
-- Clear all files: `wp scg clear`
+- Clear all files: `wp scw clear`
 - Re-enable and regenerate
 
-## [2.0.2] - 2025-01-09
+## [2.0.2] - 2025-10-09
 
 ### WordPress Coding Standards Compliance
 - **MAJOR:** Achieved 100% WordPress Plugin Check compliance (zero errors, zero warnings)
@@ -85,7 +107,7 @@ All notable changes to this project will be documented in this file.
 - Removed error suppression operators where proper error handling exists
 - Removed redundant null checks (using null coalescing instead)
 
-## [2.0.1] - 2025-01-08
+## [2.0.1] - 2025-10-08
 
 ### Security
 - **CRITICAL:** Added path traversal validation in `zip --output` command to prevent writing files outside allowed directories
@@ -139,7 +161,7 @@ All notable changes to this project will be documented in this file.
 - File system location display in admin
 
 ### Changed
-- Renamed WP-CLI commands from `ssg` to `scg`
+- Renamed WP-CLI commands from `ssg` to `scw`
 - Improved error handling in asset downloads
 - Better CSS/JS asset path rewriting
 

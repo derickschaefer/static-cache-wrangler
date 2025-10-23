@@ -1,4 +1,4 @@
-# Static Cache Generator
+# Static Cache Wrangler
 
 > Transform your WordPress site into a fully self-contained static website that works completely offline.
 
@@ -8,7 +8,7 @@
 
 ## What It Does
 
-Static Cache Generator automatically creates static HTML versions of your WordPress pages as visitors browse your site. It downloads and localizes all assets (CSS, JS, images, fonts) so the exported site works without an internet connection.
+Static Cache Wrangler automatically creates static HTML versions of your WordPress pages as visitors browse your site. It downloads and localizes all assets (CSS, JS, images, fonts) so the exported site works without an internet connection.
 
 **Perfect for:**
 - Creating offline documentation
@@ -54,15 +54,15 @@ File System Locations
 ### Via WP-CLI
 
 ```bash
-wp plugin install static-cache-generator --activate
+wp plugin install static-cache-wrangler --activate
 ```
 
 ### Manual Installation
 
 ```bash
 cd wp-content/plugins
-git clone https://github.com/yourusername/static-cache-generator.git
-wp plugin activate static-cache-generator
+git clone https://github.com/yourusername/static-cache-wrangler.git
+wp plugin activate static-cache-wrangler
 ```
 
 ## Quick Start
@@ -78,19 +78,19 @@ wp plugin activate static-cache-generator
 
 ```bash
 # Enable generation
-wp scg enable
+wp scw enable
 
 # Check status
-wp scg status
+wp scw status
 
 # Process pending assets
-wp scg process
+wp scw process
 
 # Create ZIP archive
-wp scg zip
+wp scw zip
 
 # Clear all static files
-wp scg clear
+wp scw clear
 ```
 
 ## How It Works
@@ -123,35 +123,35 @@ wp scg clear
 ## Architecture
 
 ```
-static-cache-generator/
+static-cache-wrangler/
 ├── admin/
-│   ├── class-scg-admin.php      # Settings page controller
-│   ├── class-scg-admin-bar.php  # WordPress admin bar integration
+│   ├── class-scw-admin.php      # Settings page controller
+│   ├── class-scw-admin-bar.php  # WordPress admin bar integration
 │   └── views/
 │       └── admin-page.php       # Main settings UI
 ├── cli/
-│   └── class-scg-cli.php        # WP-CLI command definitions
+│   └── class-scw-cli.php        # WP-CLI command definitions
 ├── includes/
-│   ├── class-scg-core.php       # Core functionality & hooks
-│   ├── class-scg-generator.php  # HTML generation & output buffering
-│   ├── class-scg-asset-handler.php  # Asset downloading & processing
-│   └── class-scg-url-helper.php # URL manipulation utilities
+│   ├── class-scw-core.php       # Core functionality & hooks
+│   ├── class-scw-generator.php  # HTML generation & output buffering
+│   ├── class-scw-asset-handler.php  # Asset downloading & processing
+│   └── class-scw-url-helper.php # URL manipulation utilities
 └── static-site.php              # Main plugin file
 ```
 
 ## WP-CLI Commands
 
-### `wp scg enable`
+### `wp scw enable`
 Enable static site generation.
 
-### `wp scg disable`
+### `wp scw disable`
 Disable static site generation.
 
-### `wp scg status`
+### `wp scw status`
 Display current status and statistics.
 
 ```bash
-$ wp scg status
+$ wp scw status
 Static Generation: Enabled
 Static Files: 23
 Total Size: 4.2 MB
@@ -161,26 +161,26 @@ Static Directory: /var/www/html/wp-content/cache/_static/
 Assets Directory: /var/www/html/wp-content/cache/_static/assets/
 ```
 
-### `wp scg process`
+### `wp scw process`
 Process all pending asset downloads immediately.
 
 ```bash
-$ wp scg process
+$ wp scw process
 Processing pending assets...
 Found 45 pending assets. Processing...
 Downloading assets  100% [========================================] 0:00 / 0:12
 Downloaded 45 assets successfully!
 ```
 
-### `wp scg clear`
+### `wp scw clear`
 Remove all generated static files and assets.
 
 ```bash
-$ wp scg clear
+$ wp scw clear
 All static files cleared.
 ```
 
-### `wp scg zip`
+### `wp scw zip`
 Create a ZIP archive of the complete static site.
 
 **Options:**
@@ -188,11 +188,11 @@ Create a ZIP archive of the complete static site.
 
 ```bash
 # Default location
-$ wp scg zip
+$ wp scw zip
 ZIP created: /wp-content/cache/static-site-2025-01-15-14-30-00.zip (4.2 MB)
 
 # Custom location
-$ wp scg zip --output=/tmp/mysite.zip
+$ wp scw zip --output=/tmp/mysite.zip
 ZIP created: /tmp/mysite.zip (4.2 MB)
 ```
 
@@ -204,13 +204,13 @@ The plugin works with sensible defaults, but you can customize behavior:
 
 ```php
 // Change static files location
-define('STCG_STATIC_DIR', WP_CONTENT_DIR . '/my-static-files/');
+define('STCW_STATIC_DIR', WP_CONTENT_DIR . '/my-static-files/');
 
 // Change assets location
-define('STCG_ASSETS_DIR', WP_CONTENT_DIR . '/my-assets/');
+define('STCW_ASSETS_DIR', WP_CONTENT_DIR . '/my-assets/');
 
 // Disable async asset processing (process immediately)
-define('STCG_ASYNC_ASSETS', false);
+define('STCW_ASYNC_ASSETS', false);
 ```
 ## Asset Handling
 
@@ -256,7 +256,7 @@ Example:
 cp /wp-content/uploads/fbrfg/* /wp-content/cache/_static/assets/
 
 # Re-create ZIP with updated favicons
-wp scg zip
+wp scw zip
 ```
 
 **Simple Solution:** For maximum compatibility, place a standard `favicon.ico` file in your WordPress root directory. Browsers will request it automatically even without a `<link>` tag.
@@ -273,7 +273,7 @@ wp scg zip
 
 ```php
 // Exclude specific URLs from generation
-add_filter('scg_should_generate', function($should_generate, $url) {
+add_filter('scw_should_generate', function($should_generate, $url) {
     if (strpos($url, '/private/') !== false) {
         return false;
     }
@@ -281,7 +281,7 @@ add_filter('scg_should_generate', function($should_generate, $url) {
 }, 10, 2);
 
 // Modify HTML before saving
-add_filter('scg_before_save_html', function($html) {
+add_filter('scw_before_save_html', function($html) {
     // Add custom footer
     return str_replace('</body>', '<footer>Generated: ' . date('Y-m-d') . '</footer></body>', $html);
 });
@@ -292,10 +292,10 @@ add_filter('scg_before_save_html', function($html) {
 ### 1. Offline Documentation
 
 ```bash
-wp scg enable
+wp scw enable
 # Browse all documentation pages
-wp scg process
-wp scg zip --output=/docs/offline-docs.zip
+wp scw process
+wp scw zip --output=/docs/offline-docs.zip
 ```
 
 ### 2. Client Deliverables
@@ -303,20 +303,20 @@ wp scg zip --output=/docs/offline-docs.zip
 Export a complete static version for clients who don't need WordPress:
 
 ```bash
-wp scg enable
+wp scw enable
 # Browse site
-wp scg zip
+wp scw zip
 # Deliver ZIP file
 ```
 
 ### 3. Archive Before Redesign
 
 ```bash
-wp scg enable
+wp scw enable
 # Crawl entire site with wget or similar
-wp scg process
-wp scg zip --output=/backups/pre-redesign.zip
-wp scg disable
+wp scw process
+wp scw zip --output=/backups/pre-redesign.zip
+wp scw disable
 ```
 
 ### 4. CDN-Free Deployment
@@ -324,9 +324,9 @@ wp scg disable
 Deploy the static site to any web server without WordPress dependencies:
 
 ```bash
-wp scg enable
-wp scg process
-wp scg zip
+wp scw enable
+wp scw process
+wp scw zip
 # Extract and upload to Amazon S3®, Netlify®, GitHub®, etc.
 ```
 
@@ -351,7 +351,7 @@ sudo chown -R www-data:www-data /var/www/html/wp-content/cache
 sudo chmod -R 755 /var/www/html/wp-content/cache
 
 # Verify
-wp scg status
+wp scw status
 ```
 
 ## Troubleshooting
@@ -360,7 +360,7 @@ wp scg status
 
 **Check if generation is enabled:**
 ```bash
-wp scg status
+wp scw status
 ```
 
 **Verify directory permissions:**
@@ -379,7 +379,7 @@ define('WP_DEBUG_LOG', true);
 
 **Process manually:**
 ```bash
-wp scg process
+wp scw process
 ```
 
 **Check error logs:**
@@ -452,13 +452,13 @@ The plugin stores static files in `wp-content/cache/_static/`. Disk usage varies
 
 **Monitor disk usage through:**
 - WordPress admin dashboard: **Settings > Static Cache** (shows total size)
-- WP-CLI: `wp scg status` (detailed breakdown)
+- WP-CLI: `wp scw status` (detailed breakdown)
 - Your hosting control panel
 
 **To reduce disk usage:**
 ```bash
 # Clear all static files
-wp scg clear
+wp scw clear
 
 # Or manually delete old files
 rm -rf /var/www/html/wp-content/cache/_static/*
@@ -466,7 +466,7 @@ rm -rf /var/www/html/wp-content/cache/_static/*
 
 **Exclude large pages from generation:**
 ```php
-add_filter('scg_should_generate', function($should, $url) {
+add_filter('scw_should_generate', function($should, $url) {
     // Don't generate static files for media-heavy pages
     if (strpos($url, '/gallery/') !== false) {
         return false;
@@ -480,12 +480,12 @@ add_filter('scg_should_generate', function($should, $url) {
 1. **Process assets during off-peak hours:**
    ```bash
    # Add to crontab
-   0 2 * * * /usr/bin/wp scg process --path=/var/www/html
+   0 2 * * * /usr/bin/wp scw process --path=/var/www/html
    ```
 
 2. **Disable on high-traffic pages:**
    ```php
-   add_filter('scg_should_generate', function($should, $url) {
+   add_filter('scw_should_generate', function($should, $url) {
        return !is_front_page() && $should;
    }, 10, 2);
    ```
@@ -493,7 +493,7 @@ add_filter('scg_should_generate', function($should, $url) {
 3. **Clear old static files regularly:**
    ```bash
    # Weekly cleanup
-   0 3 * * 0 /usr/bin/wp scg clear --path=/var/www/html
+   0 3 * * 0 /usr/bin/wp scw clear --path=/var/www/html
    ```
 **Best practices:**
 - Optimize images before generating static site (use image optimization plugins)
@@ -518,8 +518,8 @@ Contributions are welcome! Please follow these guidelines:
 ### Development Setup
 
 ```bash
-git clone https://github.com/yourusername/static-cache-generator.git
-cd static-cache-generator
+git clone https://github.com/yourusername/static-cache-wrangler.git
+cd static-cache-wrangler
 composer install  # If you add Composer dependencies later
 ```
 
@@ -575,9 +575,9 @@ This plugin is an independent open-source project and is **not endorsed by, affi
 
 ## Support
 
-- **Issues:** [GitHub Issues](https://github.com/yourusername/static-cache-generator/issues)
-- **Documentation:** [Wiki](https://github.com/yourusername/static-cache-generator/wiki)
-- **Discussions:** [GitHub Discussions](https://github.com/yourusername/static-cache-generator/discussions)
+- **Issues:** [GitHub Issues](https://github.com/yourusername/static-cache-wrangler/issues)
+- **Documentation:** [Wiki](https://github.com/yourusername/static-cache-wrangler/wiki)
+- **Discussions:** [GitHub Discussions](https://github.com/yourusername/static-cache-wrangler/discussions)
 
 ## Roadmap
 

@@ -1,10 +1,10 @@
-=== Static Cache Generator ===
+=== Static Cache Wrangler ===
 Contributors: derickschaefer
 Tags: static site, html export, offline, wp-cli, performance
 Requires at least: 5.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.0.3
+Stable tag: 2.0.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,11 +12,11 @@ Transform your WordPress site into a fully self-contained static website — fas
 
 == Description ==
 
-**Static Cache Generator** is a *lazy-loading, low-resource static cache and export engine* that automatically creates self-contained HTML versions of your WordPress site.  
+**Static Cache Wrangler** is a *lazy-loading, low-resource static cache and export engine* that automatically creates self-contained HTML versions of your WordPress site.  
 
 It's perfect for anyone who wants to **preserve, distribute, or accelerate WordPress content** — whether you're archiving a client site, deploying to a CDN, or creating a portable offline version that just works anywhere.
 
-Unlike traditional static site plugins that require full re-builds or database schema changes, **Static Cache Generator is zero-impact** —  
+Unlike traditional static site plugins that require full re-builds or database schema changes, **Static Cache Wrangler is zero-impact** —  
 * It does not add custom database tables or modify your schema.
 * All plugin options, cron jobs, and transients are automatically cleaned up upon uninstall.
 * Your WordPress database remains exactly as it was before installation.
@@ -60,18 +60,18 @@ Unlike traditional static site plugins that require full re-builds or database s
 
 Full control without the dashboard:
 
-* `wp scg enable` – Enable static generation  
-* `wp scg disable` – Disable static generation  
-* `wp scg status` – View current status and statistics  
-* `wp scg process` – Process all pending assets  
-* `wp scg clear` – Remove all generated static files  
-* `wp scg zip` – Create a ZIP archive of the site  
+* `wp scw enable` – Enable static generation  
+* `wp scw disable` – Disable static generation  
+* `wp scw status` – View current status and statistics  
+* `wp scw process` – Process all pending assets  
+* `wp scw clear` – Remove all generated static files  
+* `wp scw zip` – Create a ZIP archive of the site  
 
 ---
 
 == Installation ==
 
-1. Upload the plugin files to `/wp-content/plugins/static-cache-generator/` or install via Plugins > Add New.
+1. Upload the plugin files to `/wp-content/plugins/static-cache-wrangler/` or install via Plugins > Add New.
 2. Activate the plugin from the *Plugins* screen.
 3. Navigate to **Settings → Static Cache** to enable generation.
 4. Browse your site normally — pages are cached as they load.
@@ -82,7 +82,7 @@ Full control without the dashboard:
 == Frequently Asked Questions ==
 
 = Does it work with any theme or builder? =
-Yes — Static Cache Generator captures the final rendered HTML, so it works with any theme, builder, or framework (Elementor®, Divi®, Gutenberg®, etc.).
+Yes — Static Cache Wrangler captures the final rendered HTML, so it works with any theme, builder, or framework (Elementor®, Divi®, Gutenberg®, etc.).
 
 = Does it use a lot of resources? =
 No — it's designed as a *lazy loader*, generating static pages only on demand with minimal memory and CPU impact.
@@ -98,27 +98,27 @@ Absolutely. The output is plain HTML and assets — deploy it on any web server,
 Dynamic features like forms, comments, or live feeds won't function in the static version, but all rendered content and assets are preserved exactly.
 
 = How do I update after making changes? =
-Revisit the updated pages while generation is enabled, or run `wp scg process` to rebuild all static content.
+Revisit the updated pages while generation is enabled, or run `wp scw process` to rebuild all static content.
 
 = Can I customize the configuration? =
 
 Yes! You can customize file locations and behavior using constants in `wp-config.php`:
 
 **Change static files location:**
-`define('STCG_STATIC_DIR', WP_CONTENT_DIR . '/my-static-files/');`
+`define('STCW_STATIC_DIR', WP_CONTENT_DIR . '/my-static-files/');`
 
 **Change assets location:**
-`define('STCG_ASSETS_DIR', WP_CONTENT_DIR . '/my-assets/');`
+`define('STCW_ASSETS_DIR', WP_CONTENT_DIR . '/my-assets/');`
 
 **Disable async asset processing (process immediately):**
-`define('STCG_ASYNC_ASSETS', false);`
+`define('STCW_ASYNC_ASSETS', false);`
 
 = What if I need advanced customization? =
 
 You can use WordPress filters to customize behavior:
 
 **Exclude specific URLs from generation:**
-`add_filter('stcg_should_generate', function($should, $url) {
+`add_filter('stcw_should_generate', function($should, $url) {
     if (strpos($url, '/private/') !== false) {
         return false;
     }
@@ -126,7 +126,7 @@ You can use WordPress filters to customize behavior:
 }, 10, 2);`
 
 **Modify HTML before saving:**
-`add_filter('stcg_before_save_html', function($html) {
+`add_filter('stcw_before_save_html', function($html) {
     return str_replace('</body>', '<footer>Generated: ' . date('Y-m-d') . '</footer></body>', $html);
 });`
 
@@ -143,16 +143,30 @@ You can use WordPress filters to customize behavior:
 
 == Changelog ==
 
+= 2.0.4 =
+* **Major WordPress.org Compliance & Refactor Release**  
+  This update brings the plugin fully in line with current WordPress.org Plugin Directory requirements and coding standards. Nearly every internal file, reference, and namespace was audited, renamed, or rewritten for long-term maintainability and compliance.
+* **Plugin slug, text domain, and directory renamed** from `static-cache-generator` → `static-cache-wrangler` to meet naming and trademark guidelines.
+* **All file, class, and function prefixes** updated from `STCG` → `STCW` for consistent 4-character namespace compliance.
+* **Text domain and translation calls** unified across all PHP files for proper i18n validation.
+* **Folder structure and includes** modernized for autoloading consistency and WP.org scanning compatibility.
+* **Admin interface and view templates** refactored for cleaner markup and translation readiness.
+* **CLI namespace and command base** confirmed as `scw` (formerly `scg`) with backward compatibility removed for clarity.
+* **All GitHub and asset references** updated to reflect the new canonical project name and repository.
+* **Packaging and distribution scripts** updated for compliance (clean `.zip` exports excluding dev files).
+* **BREAKING CHANGE:** Sites upgrading from earlier builds must **deactivate the old “Static Cache Generator” plugin, delete it, and install/activate “Static Cache Wrangler.”**
+  Data and generated files can be safely regenerated once activated.
+
 = 2.0.3 =
 * **WordPress.org Compliance Update**
-* Changed all PHP prefixes from SCG_ to STCG_ (4+ character requirement)
+* Changed all PHP prefixes from SCG_ to STCW_ (4+ character requirement)
 * Properly enqueued all scripts and styles (removed inline code)
 * Extracted CSS to admin/css/admin-style.css
 * Extracted JavaScript to admin/js/admin-script.js and includes/js/auto-process.js
-* WP-CLI commands unchanged for user convenience (still `wp scg`)
+* WP-CLI commands unchanged for user convenience (still `wp scw`)
 * **BREAKING CHANGE:** Requires clearing and regenerating static files after update
-* All option names changed (scg_enabled → stcg_enabled, etc.)
-* All WordPress hooks changed (scg_process_assets → stcg_process_assets, etc.)
+* All option names changed (scw_enabled → stcw_enabled, etc.)
+* All WordPress hooks changed (scw_process_assets → stcw_process_assets, etc.)
 * See full migration guide on GitHub for technical details
 
 = 2.0.2 =
@@ -176,6 +190,9 @@ You can use WordPress filters to customize behavior:
 ---
 
 == Upgrade Notice ==
+
+= 2.0.4 =
+WordPress.org compliance update. BREAKING CHANGE: Clear and regenerate static files after upgrading. All internal prefixes changed AGAIN to meet WordPress requirements.  Also, a complete name change from US trademark protected generic name to trademarkable unique name to meet WordPress compliance.   Features 2.0.3 and 2.0.4 feature ZERO technical nor functional improvements but have massive, code, compsobility, and featuring breaking changes to meet WordPress.Org compliance.
 
 = 2.0.3 =
 WordPress.org compliance update. BREAKING CHANGE: Clear and regenerate static files after upgrading. All internal prefixes changed to meet WordPress requirements.
@@ -208,10 +225,10 @@ Major update with enhanced stability, performance, and compliance. Recommended f
 * Medium site (100-500 pages): 200 MB - 1 GB  
 * Large site (1000+ pages): 1-5 GB
 
-Monitor disk usage via Settings → Static Cache or `wp scg status`.
+Monitor disk usage via Settings → Static Cache or `wp scw status`.
 
 To reduce disk usage, exclude large pages:
-`add_filter('stcg_should_generate', function($should, $url) {
+`add_filter('stcw_should_generate', function($should, $url) {
     if (strpos($url, '/gallery/') !== false) {
         return false;
     }
@@ -263,8 +280,8 @@ This plugin is an independent open-source project and is **not endorsed by, affi
 == Support ==
 
 For issues, requests, and documentation, visit:  
-[GitHub – Static Cache Generator](https://github.com/derickschaefer/static-cache-generator)
-[Documentation & Guides](https://moderncli.dev/code/static-cache-generator/)
+[GitHub – Static Cache Wrangler](https://github.com/derickschaefer/static-cache-wrangler)
+[Documentation & Guides](https://moderncli.dev/code/static-cache-wrangler/)
 
 ---
 
