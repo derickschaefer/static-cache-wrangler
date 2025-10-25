@@ -34,6 +34,38 @@ class STCW_Generator {
     }
     
     /**
+     * Remove WordPress-specific meta tags from wp_head()
+     *
+     * Prevents unnecessary WordPress metadata from appearing in static HTML.
+     * Uses WordPress's native remove_action() for clean, performant removal.
+     */
+    private function remove_wordpress_meta_tags() {
+        // Remove RSD (Really Simple Discovery) link for XML-RPC
+        remove_action('wp_head', 'rsd_link');
+        
+        // Remove Windows Live Writer manifest link
+        remove_action('wp_head', 'wlwmanifest_link');
+        
+        // Remove shortlink (uses query strings incompatible with static structure)
+        remove_action('wp_head', 'wp_shortlink_wp_head', 10, 0);
+        
+        // Remove WordPress generator meta tag
+        remove_action('wp_head', 'wp_generator');
+        
+        // Remove REST API link tag
+        remove_action('wp_head', 'rest_output_link_wp_head', 10, 0);
+        
+        // Remove oEmbed discovery links
+        remove_action('wp_head', 'wp_oembed_add_discovery_links', 10);
+        
+        // Remove REST API link from HTTP headers
+        remove_action('template_redirect', 'rest_output_link_header', 11, 0);
+        
+        // Allow developers to remove additional WordPress actions
+        do_action('stcw_remove_wp_head_tags');
+    }
+    
+    /**
      * Start output buffering for current request
      *
      * Determines if page should be cached and starts capture
@@ -61,6 +93,10 @@ class STCW_Generator {
         ) {
             return;
         }
+        
+        // Remove WordPress-specific meta tags before generating output
+        // This prevents them from being added in the first place
+        $this->remove_wordpress_meta_tags();
         
         // Start output buffering with callback
         ob_start([$this, 'save_output']);
@@ -339,7 +375,9 @@ class STCW_Generator {
     /**
      * Process HTML for static output
      *
-     * Adds metadata, removes WordPress-specific tags
+     * Adds metadata, removes WordPress-specific tags as safety net.
+     * Primary removal happens via remove_action() in remove_wordpress_meta_tags(),
+     * but this provides a regex-based safety net for any tags that slip through.
      *
      * @param string $html HTML content
      * @return string Processed HTML
@@ -349,9 +387,33 @@ class STCW_Generator {
         $comment = "\n<!-- Static version generated: $timestamp -->\n";
         $comment .= "<!-- To use offline: Extract ZIP and open index.html in browser -->\n";
         
-        // Remove WordPress-specific tags
+        // Safety net: Remove WordPress-specific tags via regex
+        // These should already be removed by remove_wordpress_meta_tags(),
+        // but this catches any edge cases or plugin-added tags
+        
+        // Remove REST API and alternate links
         $html = preg_replace('#<link[^>]+rel=["\'](?:https://api\.w\.org/|alternate)["\'][^>]*>#i', '', $html);
+        
+        // Remove RSD (Really Simple Discovery) links
+        $html = preg_replace('#<link[^>]+rel=["\']EditURI["\'][^>]*>#i', '', $html);
+        
+        // Remove Windows Live Writer manifest links
+        $html = preg_replace('#<link[^>]+rel=["\']wlwmanifest["\'][^>]*>#i', '', $html);
+        
+        // Remove shortlink tags
+        $html = preg_replace('#<link[^>]+rel=["\']shortlink["\'][^>]*>#i', '', $html);
+        
+        // Remove WordPress generator meta tags
+        $html = preg_replace('#<meta[^>]+name=["\']generator["\'][^>]*>#i', '', $html);
+        
+        // Remove emoji-related scripts
         $html = preg_replace('#<script[^>]*>.*?wp-emoji-release\.min\.js.*?</script>#is', '', $html);
+        
+        // Remove WordPress-specific script attributes (optional - for cleaner HTML)
+        $html = preg_replace('/\s+data-wp-strategy=["\'][^"\']*["\']/', '', $html);
+        
+        // Allow developers to add custom HTML processing
+        $html = apply_filters('stcw_process_static_html', $html);
         
         // Add comment before closing body tag
         if (stripos($html, '</body>') !== false) {

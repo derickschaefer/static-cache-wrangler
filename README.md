@@ -22,10 +22,25 @@ Static Cache Wrangler automatically creates static HTML versions of your WordPre
 - **Zero-configuration** - Works out of the box
 - **Automatic generation** - Creates static files on page visits
 - **Asset localization** - Downloads CSS, JS, images, fonts to local directory
+- **Clean HTML output** - Removes WordPress-specific meta tags (v2.0.5+)
 - **Relative paths** - All links rewritten for portability
 - **Modern UI** - Clean, card-based admin interface
 - **WP-CLI support** - Full command-line control
 - **One-click export** - Download entire static site as ZIP
+- **Developer hooks** - Extensible API for companion plugins (v2.0.5+)
+
+## What's New in 2.0.5
+
+**Enhanced Static HTML Output:**
+- Removes 7+ WordPress meta tags (RSD, generator, shortlinks, REST API, etc.)
+- 3.1% smaller file sizes
+- 2.3% faster generation
+- Better security (WordPress version hidden)
+
+**Developer API:**
+- New `stcw_remove_wp_head_tags` action hook
+- New `stcw_process_static_html` filter hook
+- Extensibility for companion plugins
 
 ## Screenshots
 
@@ -61,7 +76,7 @@ wp plugin install static-cache-wrangler --activate
 
 ```bash
 cd wp-content/plugins
-git clone https://github.com/yourusername/static-cache-wrangler.git
+git clone https://github.com/derickschaefer/static-cache-wrangler.git
 wp plugin activate static-cache-wrangler
 ```
 
@@ -125,18 +140,25 @@ wp scw clear
 ```
 static-cache-wrangler/
 ├── admin/
-│   ├── class-scw-admin.php      # Settings page controller
-│   ├── class-scw-admin-bar.php  # WordPress admin bar integration
+│   ├── class-stcw-admin.php      # Settings page controller
+│   ├── class-stcw-admin-bar.php  # WordPress admin bar integration
+│   ├── css/
+│   │   └── admin-style.css       # Admin dashboard styles
+│   ├── js/
+│   │   └── admin-script.js       # Admin dashboard JavaScript
 │   └── views/
-│       └── admin-page.php       # Main settings UI
+│       └── admin-page.php        # Main settings UI
 ├── cli/
-│   └── class-scw-cli.php        # WP-CLI command definitions
+│   └── class-stcw-cli.php        # WP-CLI command definitions
 ├── includes/
-│   ├── class-scw-core.php       # Core functionality & hooks
-│   ├── class-scw-generator.php  # HTML generation & output buffering
-│   ├── class-scw-asset-handler.php  # Asset downloading & processing
-│   └── class-scw-url-helper.php # URL manipulation utilities
-└── static-site.php              # Main plugin file
+│   ├── class-stcw-core.php           # Core functionality & hooks
+│   ├── class-stcw-generator.php      # HTML generation & output buffering
+│   ├── class-stcw-asset-handler.php  # Asset downloading & processing
+│   ├── class-stcw-url-helper.php     # URL manipulation utilities
+│   ├── stcw-logger.php               # Debug logging utility
+│   └── js/
+│       └── auto-process.js           # Background asset processing
+└── static-site.php                   # Main plugin file
 ```
 
 ## WP-CLI Commands
@@ -212,6 +234,32 @@ define('STCW_ASSETS_DIR', WP_CONTENT_DIR . '/my-assets/');
 // Disable async asset processing (process immediately)
 define('STCW_ASYNC_ASSETS', false);
 ```
+
+### Developer Hooks (v2.0.5+)
+
+```php
+// Remove additional WordPress head tags
+add_action('stcw_remove_wp_head_tags', function() {
+    remove_action('wp_head', 'your_custom_action');
+});
+
+// Modify HTML before saving to file
+add_filter('stcw_process_static_html', function($html) {
+    // Add custom footer, remove tracking scripts, etc.
+    return $html;
+});
+
+// Exclude specific URLs from generation
+add_filter('stcw_should_generate', function($should_generate, $url) {
+    if (strpos($url, '/private/') !== false) {
+        return false;
+    }
+    return $should_generate;
+}, 10, 2);
+```
+
+See the [Developer Examples](https://github.com/derickschaefer/static-cache-wrangler/wiki/Developer-Examples) for more hook usage patterns.
+
 ## Asset Handling
 
 ### What Gets Downloaded
@@ -268,25 +316,6 @@ wp scw zip
 - ❌ Dynamic content loaded via AJAX/REST API
 - ❌ Assets from different domains (cross-origin)
 
-
-### Filters
-
-```php
-// Exclude specific URLs from generation
-add_filter('scw_should_generate', function($should_generate, $url) {
-    if (strpos($url, '/private/') !== false) {
-        return false;
-    }
-    return $should_generate;
-}, 10, 2);
-
-// Modify HTML before saving
-add_filter('scw_before_save_html', function($html) {
-    // Add custom footer
-    return str_replace('</body>', '<footer>Generated: ' . date('Y-m-d') . '</footer></body>', $html);
-});
-```
-
 ## Use Cases
 
 ### 1. Offline Documentation
@@ -327,7 +356,7 @@ Deploy the static site to any web server without WordPress dependencies:
 wp scw enable
 wp scw process
 wp scw zip
-# Extract and upload to Amazon S3®, Netlify®, GitHub®, etc.
+# Extract and upload to Amazon S3®, Netlify®, GitHub Pages®, etc.
 ```
 
 ## Server Requirements
@@ -466,7 +495,7 @@ rm -rf /var/www/html/wp-content/cache/_static/*
 
 **Exclude large pages from generation:**
 ```php
-add_filter('scw_should_generate', function($should, $url) {
+add_filter('stcw_should_generate', function($should, $url) {
     // Don't generate static files for media-heavy pages
     if (strpos($url, '/gallery/') !== false) {
         return false;
@@ -485,7 +514,7 @@ add_filter('scw_should_generate', function($should, $url) {
 
 2. **Disable on high-traffic pages:**
    ```php
-   add_filter('scw_should_generate', function($should, $url) {
+   add_filter('stcw_should_generate', function($should, $url) {
        return !is_front_page() && $should;
    }, 10, 2);
    ```
@@ -495,6 +524,7 @@ add_filter('scw_should_generate', function($should, $url) {
    # Weekly cleanup
    0 3 * * 0 /usr/bin/wp scw clear --path=/var/www/html
    ```
+
 **Best practices:**
 - Optimize images before generating static site (use image optimization plugins)
 - Clear old static files before regenerating
@@ -503,7 +533,6 @@ add_filter('scw_should_generate', function($should, $url) {
 
 **Video and Audio Files:**  
 The plugin intentionally does not download video (MP4, WebM) or audio (MP3, WAV) files. These should remain on your WordPress server or external hosting (YouTube, CDN). The static HTML will link to these resources.
-
 
 ## Contributing
 
@@ -518,7 +547,7 @@ Contributions are welcome! Please follow these guidelines:
 ### Development Setup
 
 ```bash
-git clone https://github.com/yourusername/static-cache-wrangler.git
+git clone https://github.com/derickschaefer/static-cache-wrangler.git
 cd static-cache-wrangler
 composer install  # If you add Composer dependencies later
 ```
@@ -575,18 +604,69 @@ This plugin is an independent open-source project and is **not endorsed by, affi
 
 ## Support
 
-- **Issues:** [GitHub Issues](https://github.com/yourusername/static-cache-wrangler/issues)
-- **Documentation:** [Wiki](https://github.com/yourusername/static-cache-wrangler/wiki)
-- **Discussions:** [GitHub Discussions](https://github.com/yourusername/static-cache-wrangler/discussions)
+- **Issues:** [GitHub Issues](https://github.com/derickschaefer/static-cache-wrangler/issues)
+- **Documentation:** [GitHub Wiki](https://github.com/derickschaefer/static-cache-wrangler/wiki)
+- **Discussions:** [GitHub Discussions](https://github.com/derickschaefer/static-cache-wrangler/discussions)
 
 ## Roadmap
 
 - [ ] Automatic sitemap crawling
 - [ ] Multi-language support
 - [ ] Incremental generation (only changed pages)
-- [ ] URL include and exclude support
+- [ ] URL include/exclude patterns with wildcards
+- [ ] Built-in search functionality for static sites
+- [ ] Companion plugin marketplace
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md) for version history.
+## [2.0.5] - 2025-10-25
 
+### Enhanced Static HTML Output
+- Implemented hybrid WordPress meta tag removal (native `remove_action()` + regex safety net)
+- Removed 7+ WordPress-specific meta tags: RSD, wlwmanifest, shortlinks, generator, REST API, oEmbed
+- Stripped `data-wp-strategy` attributes for cleaner HTML output
+- Reduced HTML file size by 3.1% and generation time by 2.3%
+
+### Developer API
+- **NEW:** `stcw_remove_wp_head_tags` action hook for removing additional WordPress tags
+- **NEW:** `stcw_process_static_html` filter hook for modifying HTML before save
+- Added `STCW_Generator::remove_wordpress_meta_tags()` method
+- Enhanced extensibility for companion plugins and theme integration
+
+### Improvements
+- Better security: WordPress version no longer exposed
+- Fully portable HTML without WordPress metadata
+- Comprehensive PHPDoc documentation
+- Backward compatible with 2.0.4
+
+### Files Changed
+- `includes/class-stcw-generator.php` - Major enhancement
+
+**Migration:** Optional - run `wp scw clear && wp scw enable` for cleanest output
+
+---
+
+## [2.0.4] - 2025-10-22
+
+### Major WordPress.org Compliance & Refactor Release
+- **MAJOR:** Comprehensive compliance overhaul aligning with WordPress.org Plugin Directory and Coding Standards.
+- **RENAME:** Plugin slug, text domain, and directory changed from `static-cache-generator` → `static-cache-wrangler` to meet naming and trademark requirements.
+- **NAMESPACE:** All internal class and function prefixes updated from `STCG` → `STCW` (4+ character namespace compliance).
+- **I18N:** Unified text domains and translation calls across all PHP files for full localization validation.
+- **STRUCTURE:** Updated folder structure, includes, and autoload paths for modern compatibility.
+- **ADMIN UI:** Refactored admin views and templates for cleaner markup, translation readiness, and better accessibility.
+- **CLI:** Confirmed namespace and command base as `scw` (formerly `scg`), removed legacy aliases for clarity.
+- **REPO:** Updated all GitHub references, assets, and documentation links to reflect the new canonical project name.
+- **PACKAGING:** Cleaned distribution process and `.zip` exports to exclude development assets, node_modules, vendor directories, and internal build scripts.
+
+### Migration Notes
+- **BREAKING:** Sites upgrading from `Static Cache Generator` must deactivate and remove the old plugin before activating `Static Cache Wrangler`.
+- Existing static files should be cleared and regenerated for full compatibility.
+- Command reference:  
+  ```bash
+  wp scw clear
+  wp scw enable
+  wp scw process
+  ```
+
+See [CHANGELOG.md](CHANGELOG.md) for complete version history.

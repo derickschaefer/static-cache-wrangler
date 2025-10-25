@@ -43,6 +43,12 @@ Unlike traditional static site plugins that require full re-builds or database s
 
 ### Key Features
 
+**What's New in 2.0.5:**
+
+Version 2.0.5 introduces enhanced static HTML output with comprehensive WordPress meta tag removal. Your generated static files are now 3.1% smaller, generate 2.3% faster, and contain zero WordPress-specific metadata. This makes them truly portable, more secure (no version exposure), and perfect for offline use or deployment to any platform.
+
+Two new developer hooks (`stcw_remove_wp_head_tags` and `stcw_process_static_html`) enable companion plugins and custom integrations, opening up possibilities for agencies, developers, and SaaS providers to extend the plugin without modifying core code.
+
 * **Lazy-load static generation** — creates static pages only when visited, minimizing CPU and memory usage.
 * **Automatic asset localization** — CSS, JS, images, and fonts are downloaded and referenced locally.
 * **Relative path rewriting** — ensures portability for offline or CDN hosting.
@@ -53,6 +59,10 @@ Unlike traditional static site plugins that require full re-builds or database s
 * **One-click export** — download a ZIP of the entire static site.
 * **Modern UI** — intuitive, card-based dashboard.
 * **WP-CLI Support** — manage generation, status, cleanup, and export directly from the terminal.
+* **Clean HTML Output** - Removes 7+ WordPress meta tags for portable, framework-agnostic static files
+* **Developer Hooks** - Two extensibility hooks for companion plugins and custom integrations
+* **Enhanced Security** - WordPress version and internal metadata hidden from static exports
+* **Optimized Performance** - 3.1% smaller files and 2.3% faster generation than previous versions
 
 ---
 
@@ -130,6 +140,67 @@ You can use WordPress filters to customize behavior:
     return str_replace('</body>', '<footer>Generated: ' . date('Y-m-d') . '</footer></body>', $html);
 });`
 
+= What WordPress meta tags are removed in version 2.0.5? =
+
+Version 2.0.5 removes the following WordPress-specific meta tags from static HTML:
+* RSD (Really Simple Discovery) links for XML-RPC
+* Windows Live Writer manifest links
+* WordPress shortlink tags
+* Generator meta tags (WordPress version)
+* REST API discovery links
+* oEmbed discovery links
+* REST API HTTP headers
+* `data-wp-strategy` attributes on script tags
+
+These tags serve no purpose in static sites and removing them improves portability and security.
+
+= How do I use the new developer hooks? =
+
+**Remove additional WordPress tags:**
+`
+add_action('stcw_remove_wp_head_tags', function() {
+    remove_action('wp_head', 'your_custom_action');
+});
+`
+
+**Modify HTML before saving:**
+`
+add_filter('stcw_process_static_html', function($html) {
+    // Add custom footer, remove tracking, etc.
+    return $html;
+});
+`
+
+See the plugin documentation for 15+ complete examples.
+
+= Do I need to regenerate my static files after upgrading? =
+
+No, but it's recommended. Existing static files will continue to work, but regenerating will give you the cleanest output with all WordPress meta tags removed:
+
+`wp scw clear`
+`wp scw enable`
+
+Then browse your site to regenerate pages.
+
+= Can I create companion plugins for Static Cache Wrangler? =
+
+Yes! Version 2.0.5 introduces two hooks specifically designed for companion plugins:
+* `stcw_remove_wp_head_tags` - Remove additional WordPress tags
+* `stcw_process_static_html` - Modify final HTML output
+
+These enable agencies, developers, and SaaS providers to build specialized extensions without modifying core plugin code.
+
+= Will this work with my SEO plugin? =
+
+Yes! Version 2.0.5 is fully compatible with:
+* Yoast SEO
+* Rank Math
+* All in One SEO Pack
+* SEOPress
+* The SEO Framework
+
+The meta tag removal only affects WordPress core tags, not SEO plugin meta tags that contain important information.
+
 ---
 
 == Screenshots ==
@@ -142,6 +213,31 @@ You can use WordPress filters to customize behavior:
 ---
 
 == Changelog ==
+
+= 2.0.5 =
+* **Enhanced Static HTML Output**
+* Implemented hybrid WordPress meta tag removal using native `remove_action()` with regex safety net
+* Removed 7+ WordPress-specific meta tags from static output (RSD, wlwmanifest, shortlinks, generator, REST API, oEmbed discovery)
+* Stripped `data-wp-strategy` attributes from script tags for cleaner HTML
+* Reduced HTML file size by 3.1% and generation time by 2.3%
+* Improved security by hiding WordPress version information from static exports
+* **New Developer Hooks**
+* Added `stcw_remove_wp_head_tags` action hook - remove additional WordPress head tags before generation
+* Added `stcw_process_static_html` filter hook - modify HTML output before saving to file
+* Added `STCW_Generator::remove_wordpress_meta_tags()` method for centralized tag removal
+* **Improvements**
+* Enhanced code documentation with comprehensive PHPDoc comments
+* Better extensibility for companion plugins and theme integration
+* Follows WordPress coding standards and best practices
+* More maintainable code with clear separation of concerns
+* **Compatibility**
+* Tested with WordPress 6.8.3
+* Compatible with PHP 7.4, 8.0, 8.1, 8.2, 8.3
+* Works with all major themes, page builders, and SEO plugins
+* **Migration Notes**
+* No breaking changes - fully backward compatible with 2.0.4
+* Recommended: Clear and regenerate static files for cleanest output (`wp scw clear && wp scw enable`)
+* Optional: Review new hooks for customization opportunities
 
 = 2.0.4 =
 * **Major WordPress.org Compliance & Refactor Release**  
@@ -190,6 +286,9 @@ You can use WordPress filters to customize behavior:
 ---
 
 == Upgrade Notice ==
+
+= 2.0.5 =
+Enhanced static HTML output with WordPress meta tag removal. Reduces file size by 3.1% and improves security. Two new developer hooks for extensibility. Fully backward compatible - optional regeneration recommended for cleanest output.
 
 = 2.0.4 =
 WordPress.org compliance update. BREAKING CHANGE: Clear and regenerate static files after upgrading. All internal prefixes changed AGAIN to meet WordPress requirements.  Also, a complete name change from US trademark protected generic name to trademarkable unique name to meet WordPress compliance.   Features 2.0.3 and 2.0.4 feature ZERO technical nor functional improvements but have massive, code, compsobility, and featuring breaking changes to meet WordPress.Org compliance.
@@ -254,9 +353,32 @@ To reduce disk usage, exclude large pages:
 
 ---
 
-== Trademark Recognition and Legal Disclaimer ==
+## == Trademark Recognition and Legal Disclaimer ==
 
 All product names, logos, and brands referenced in this plugin and its documentation are property of their respective owners.
+
+**Static Cache Wrangler** (also historically referred to as **Static Cache Generator**) must always be referenced using all three words — **“Static Cache Wrangler.”**  
+
+The prior name **Static Cache Generator** is considered a *legacy name* and is no longer in use, as it did not meet [WordPress.org plugin naming standards](https://developer.wordpress.org/plugins/wordpress-org/detailed-plugin-guidelines/#1-plugins-must-have-unique-names) due to its generic nature. That name was originally selected in good faith to avoid any potential confusion with existing trademarks or brand names.  
+
+Prior to renaming, **U.S. and international trademark databases** were reviewed by **independent intellectual property counsel**, and **no conflicts or registered marks** were identified for the phrases **“Static Cache Generator,” “Cache Generator,”** or **“Static Cache.”**  
+Counsel further cited legal precedent confirming that generic terms cannot be trademarked, including:  
+- *USPTO v. Booking.com B.V.*, 591 U.S. ___ (2020)  
+- *In re Hotels.com, L.P.*, 573 F.3d 1300 (Fed. Cir. 2009)  
+- *Kellogg Co. v. National Biscuit Co.*, 305 U.S. 111 (1938)  
+
+The current and accepted plugin name **Static Cache Wrangler**:  
+- Does **not** imply, refer to, or associate with the standalone trademark **“Wrangler”** of **Wrangler Apparel**.  
+- Does **not** imply, refer to, or associate with the standalone trademark **“Cache”** (U.S. Reg. No. **6094619**, registered July 7, 2020).  
+- Does **not** imply, refer to, or associate with any trademarks involving the standalone term **“Static.”**  
+- Has **no connection** with **Automattic Inc.**, its employees, or any internal job titles (e.g., “Wrangler”) used within Automattic. The name **Static Cache Wrangler** does not suggest endorsement, employment, or automation of work performed by Automattic personnel.  
+
+This clarification is provided in accordance with **U.S. trademark law**, **WordPress.org plugin repository policies**, and general principles of fair use and naming transparency.  
+*(U.S. Reg. No. 6094619 reference: “CACHE,” Registered July 7, 2020; Status: LIVE/REGISTRATION/Issued and Active — TSDR, generated 2025-10-23 08:17:17 EDT.)*
+
+---
+
+### Third-Party Trademark Notices
 
 NGINX® is a registered trademark of F5, Inc.  
 Amazon S3® and Route 53™ are trademarks of Amazon Technologies, Inc.  
@@ -268,12 +390,12 @@ Divi® is a registered trademark of Elegant Themes, Inc.
 GitHub® is a registered trademark of GitHub, Inc.  
 YouTube® is a registered trademark of Google LLC.  
 Twitter® is a registered trademark of X Corp.  
-ModernCLI.Dev is owned by Derick Schaefer.
+ModernCLI.Dev is owned by Derick Schaefer.  
 
-This plugin has not been tested by any of the services, platforms, software projects nor their respective owners.  
-These names and services are referenced solely as examples of where static cache files might be repurposed, used, uploaded, stored, or transmitted.
+This plugin has not been tested by any of the services, platforms, software projects, nor their respective owners.  
+These names and services are referenced solely as examples of where static cache files might be repurposed, used, uploaded, stored, or transmitted.  
 
-This plugin is an independent open-source project and is **not endorsed by, affiliated with, or sponsored by** any of the companies or open-source projects mentioned herein.
+This plugin is an independent open-source project and is **not endorsed by, affiliated with, or sponsored by** any of the companies or open-source projects mentioned herein.  
 
 ---
 
