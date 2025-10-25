@@ -1,0 +1,66 @@
+<?php
+/**
+ * Plugin Name: Static Cache Wrangler - Demo Companion
+ * Description: Demonstrates custom hooks in action
+ * Version: 1.0.0
+ * Author: Derick Schaefer
+ * Requires: Static Cache Wrangler 2.0.5+
+ */
+
+if (!defined('ABSPATH')) exit;
+
+// Hook 1: Remove additional WordPress tags
+add_action('stcw_remove_wp_head_tags', function() {
+    // Remove resource hints (safe, won't break anything)
+    remove_action('wp_head', 'wp_resource_hints', 2);
+    
+    // Remove adjacent post links (safe)
+    remove_action('wp_head', 'adjacent_posts_rel_link_wp_head');
+    
+    // Log that the hook fired (for demo purposes)
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('STCW Demo Companion: Removed additional WP tags');
+    }
+});
+
+// Hook 2: Add simple footer to static pages
+add_filter('stcw_process_static_html', function($html) {
+    // Only add footer if it's not already there
+    if (strpos($html, 'demo-companion-footer') !== false) {
+        return $html;
+    }
+    
+    // Simple, safe footer addition
+    $footer = sprintf(
+        '<!-- Demo Companion Plugin Active -->
+        <div class="demo-companion-footer" style="margin-top:40px;padding:20px;background:#f0f0f0;border-top:3px solid #0073aa;text-align:center;">
+            <p style="margin:0;font-size:13px;color:#666;">
+                <strong>Static Version</strong> | Generated: %s | 
+                Demo Companion Plugin Active ✓
+            </p>
+        </div>',
+        date('F j, Y \a\t g:i A')
+    );
+    
+    // Insert before closing body tag
+    $html = str_replace('</body>', $footer . "\n</body>", $html);
+    
+    // Log that the hook fired (for demo purposes)
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('STCW Demo Companion: Added footer to static HTML');
+    }
+    
+    return $html;
+});
+
+// Add admin notice to show plugin is active
+add_action('admin_notices', function() {
+    // Only show on Static Cache Wrangler page
+    $screen = get_current_screen();
+    if ($screen && $screen->id === 'toplevel_page_static-cache-wrangler') {
+        echo '<div class="notice notice-info">
+                <p><strong>Demo Companion Plugin Active:</strong> 
+                Custom hooks are working! Check generated static files for the demo footer.</p>
+              </div>';
+    }
+});
