@@ -68,6 +68,21 @@ class STCW_Admin {
                 'errorProcessing' => __('Error processing assets. Please try again.', 'static-cache-wrangler'),
             ]
         ]);
+        
+        // If auto_process parameter is set, add script to auto-trigger processing
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only parameter for UI enhancement
+        if (isset($_GET['auto_process']) && $_GET['auto_process'] === '1' && $pending_count > 0) {
+            wp_add_inline_script(
+                'stcw-admin-script',
+                'jQuery(document).ready(function($) {
+                    // Auto-click the "Process Assets Now" button
+                    var $btn = $("#stcw-process-now");
+                    if ($btn.length) {
+                        $btn.trigger("click");
+                    }
+                });'
+            );
+        }
     }
     
     /**
