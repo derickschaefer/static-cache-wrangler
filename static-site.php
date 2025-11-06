@@ -16,12 +16,75 @@
 if (!defined('ABSPATH')) exit;
 
 // Plugin constants
-define('STCW_VERSION', '2.0.4');
+define('STCW_VERSION', '2.0.5');
 define('STCW_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('STCW_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('STCW_STATIC_DIR', WP_CONTENT_DIR . '/cache/_static/');
-define('STCW_ASSETS_DIR', STCW_STATIC_DIR . 'assets/');
-define('STCW_ASYNC_ASSETS', true);
+
+/**
+ * Storage locations for static files and assets
+ * ========================================
+ * All generated files are stored in:
+ *   wp-content/cache/stcw_static/
+ * 
+ * For MULTISITE installations, each site gets its own subdirectory:
+ *   wp-content/cache/stcw_static/site-{blog_id}/
+ * 
+ * Design goals are to ensure:
+ * ✓ Data persists through plugin updates (plugin folder deleted on update)
+ * ✓ Files are not publicly accessible via plugin URL
+ * ✓ Multisite compatibility with isolated storage per site
+ * ✓ WordPress.org Plugin Directory compliance
+ * ✓ Follows WordPress best practices for cache storage
+ * ✓ No collision with other plugins (unique stcw_static namespace)
+ * 
+ * Storage structure (Single Site):
+ * wp-content/
+ *   └── cache/
+ *       └── stcw_static/              ← Static HTML files (STCW_STATIC_DIR)
+ *           ├── index.html
+ *           ├── about/
+ *           │   └── index.html
+ *           └── assets/               ← Downloaded CSS/JS/Images (STCW_ASSETS_DIR)
+ *               ├── style.css
+ *               ├── script.js
+ *               └── logo.png
+ * 
+ * Storage structure (Multisite):
+ * wp-content/
+ *   └── cache/
+ *       └── stcw_static/
+ *           ├── site-1/               ← Main site
+ *           │   ├── index.html
+ *           │   └── assets/
+ *           ├── site-2/               ← Blog ID 2
+ *           │   ├── index.html
+ *           │   └── assets/
+ *           └── site-3/               ← Blog ID 3
+ *               ├── index.html
+ *               └── assets/
+ * 
+ * Users can override these paths in wp-config.php if needed:
+ * define('STCW_STATIC_DIR', WP_CONTENT_DIR . '/my-custom-path/');
+ * define('STCW_ASSETS_DIR', WP_CONTENT_DIR . '/my-custom-assets/');
+ */
+if (!defined('STCW_STATIC_DIR')) {
+    $base_dir = WP_CONTENT_DIR . '/cache/stcw_static/';
+    
+    // Add site-specific subdirectory for multisite installations
+    if (is_multisite()) {
+        $base_dir .= 'site-' . get_current_blog_id() . '/';
+    }
+    
+    define('STCW_STATIC_DIR', $base_dir);
+}
+
+if (!defined('STCW_ASSETS_DIR')) {
+    define('STCW_ASSETS_DIR', STCW_STATIC_DIR . 'assets/');
+}
+
+if (!defined('STCW_ASYNC_ASSETS')) {
+    define('STCW_ASYNC_ASSETS', true);
+}
 
 // Autoload classes
 spl_autoload_register(function($class) {
@@ -88,6 +151,10 @@ add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'stcw_add_setting
 
 /**
  * Activation hook
+ * 
+ * Creates directory structure in wp-content/cache/stcw_static/
+ * For multisite: wp-content/cache/stcw_static/site-{blog_id}/
+ * NOT in plugin directory
  */
 register_activation_hook(__FILE__, function() {
     STCW_Core::create_directories();

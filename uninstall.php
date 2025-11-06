@@ -14,12 +14,20 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
     exit;
 }
 
-// Define plugin constants if not already defined
-if (!defined('STCW_STATIC_DIR')) {
-    define('STCW_STATIC_DIR', WP_CONTENT_DIR . '/cache/_static/');
-}
-if (!defined('STCW_ASSETS_DIR')) {
-    define('STCW_ASSETS_DIR', STCW_STATIC_DIR . 'assets/');
+/**
+ * Get the static directory path (multisite-aware)
+ *
+ * @return string Static directory path
+ */
+function stcw_get_static_dir() {
+    $base_dir = WP_CONTENT_DIR . '/cache/stcw_static/';
+    
+    // Add site-specific subdirectory for multisite installations
+    if (is_multisite()) {
+        $base_dir .= 'site-' . get_current_blog_id() . '/';
+    }
+    
+    return $base_dir;
 }
 
 /**
@@ -66,15 +74,53 @@ function stcw_uninstall() {
     // Delete all plugin options
     stcw_delete_options();
     
-    // Delete static files directory
-    if (is_dir(STCW_STATIC_DIR)) {
-        stcw_delete_directory(STCW_STATIC_DIR);
+    // Delete static files directory for current site
+    $static_dir = stcw_get_static_dir();
+    if (is_dir($static_dir)) {
+        stcw_delete_directory($static_dir);
     }
     
-    // Clear any scheduled cron events
-    $timestamp = wp_next_scheduled('stcw_process_assets');
-    if ($timestamp) {
-        wp_unschedule_event($timestamp, 'stcw_process_assets');
+    // For multisite network-wide uninstall, clean up all sites
+    if (is_multisite() && function_exists('get_sites')) {
+        $sites = get_sites(['number' => 9999]);
+        foreach ($sites as $site) {
+            switch_to_blog($site->blog_id);
+            
+            // Delete options for this site
+            stcw_delete_options();
+            
+            // Delete static directory for this site
+            $site_static_dir = WP_CONTENT_DIR . '/cache/stcw_static/site-' . $site->blog_id . '/';
+            if (is_dir($site_static_dir)) {
+                stcw_delete_directory($site_static_dir);
+            }
+            
+            // Clear any scheduled cron events for this site
+            $timestamp = wp_next_scheduled('stcw_process_assets');
+            if ($timestamp) {
+                wp_unschedule_event($timestamp, 'stcw_process_assets');
+            }
+            
+            restore_current_blog();
+        }
+        
+        // Delete the parent stcw_static directory if empty or only has site subdirs
+        $base_dir = WP_CONTENT_DIR . '/cache/stcw_static/';
+        if (is_dir($base_dir)) {
+            stcw_delete_directory($base_dir);
+        }
+    } else {
+        // Single site - clear any scheduled cron events
+        $timestamp = wp_next_scheduled('stcw_process_assets');
+        if ($timestamp) {
+            wp_unschedule_event($timestamp, 'stcw_process_assets');
+        }
+        
+        // Delete the parent stcw_static directory
+        $base_dir = WP_CONTENT_DIR . '/cache/stcw_static/';
+        if (is_dir($base_dir)) {
+            stcw_delete_directory($base_dir);
+        }
     }
 }
 

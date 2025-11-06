@@ -4,7 +4,7 @@ Tags: static site, html export, offline, wp-cli, performance
 Requires at least: 5.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.0.4
+Stable tag: 2.0.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -288,16 +288,16 @@ The meta tag removal only affects WordPress core tags, not SEO plugin meta tags 
 == Upgrade Notice ==
 
 = 2.0.5 =
-Enhanced static HTML output with WordPress meta tag removal. Reduces file size by 3.1% and improves security. Two new developer hooks for extensibility. Fully backward compatible - optional regeneration recommended for cleanest output.
+Enhanced multisite support with isolated directories per site. Storage moved to wp-content/cache/stcw_static/ with unique namespace. Fully backward compatible for new installs. WordPress.org compliant.
 
 = 2.0.4 =
-WordPress.org compliance update. BREAKING CHANGE: Clear and regenerate static files after upgrading. All internal prefixes changed AGAIN to meet WordPress requirements.  Also, a complete name change from US trademark protected generic name to trademarkable unique name to meet WordPress compliance.   Features 2.0.3 and 2.0.4 feature ZERO technical nor functional improvements but have massive, code, compsobility, and featuring breaking changes to meet WordPress.Org compliance.
+Major compliance update. Plugin renamed to Static Cache Wrangler. Clear old plugin before installing. All prefixes changed from SCG to STCW. No data migration needed as plugin not yet published.
 
 = 2.0.3 =
-WordPress.org compliance update. BREAKING CHANGE: Clear and regenerate static files after upgrading. All internal prefixes changed to meet WordPress requirements.
+WordPress.org compliance. All prefixes changed to STCW (4+ characters). Clear and regenerate static files after update. WP-CLI commands unchanged.
 
 = 2.0 =
-Major update with enhanced stability, performance, and compliance. Recommended for all users.
+Major rewrite with modern standards, WP_Filesystem support, and enhanced security. Recommended for all users.
 
 ---
 

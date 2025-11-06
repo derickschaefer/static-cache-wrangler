@@ -29,6 +29,10 @@ $downloaded_count = is_array($downloaded_assets) ? count($downloaded_assets) : 0
 $static_dir_size = STCW_Core::get_directory_size($static_dir);
 $dir_size_pretty = STCW_Core::format_bytes($static_dir_size);
 
+// Check if multisite
+$is_multisite = is_multisite();
+$current_blog_id = $is_multisite ? get_current_blog_id() : 0;
+
 // Success messages
 $messages = [
     'enabled'   => __('Static site generation enabled.', 'static-cache-wrangler'),
@@ -119,7 +123,22 @@ $message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['message'
                 <h2 class="stcw-panel-title"><?php esc_html_e('File System Locations', 'static-cache-wrangler'); ?></h2>
                 <table class="widefat" style="margin-top:10px;">
                     <tbody>
+                        <?php if ($is_multisite): ?>
                         <tr>
+                            <td style="width:220px;"><strong><?php esc_html_e('Multisite', 'static-cache-wrangler'); ?></strong></td>
+                            <td>
+                                <span class="stcw-ok">✓ <?php esc_html_e('Yes', 'static-cache-wrangler'); ?></span>
+                                <?php 
+                                echo ' ' . sprintf(
+                                    /* translators: %d: blog/site ID number */
+                                    esc_html__('(Site ID: %d)', 'static-cache-wrangler'),
+                                    absint($current_blog_id)
+                                );
+                                ?>
+                            </td>
+                        </tr>
+                        <?php endif; ?>
+                        <tr <?php echo $is_multisite ? '' : 'class="alternate"'; ?>>
                             <td style="width:220px;"><strong><?php esc_html_e('Static Files', 'static-cache-wrangler'); ?></strong></td>
                             <td><code><?php echo esc_html($static_dir); ?></code></td>
                         </tr>
@@ -195,6 +214,12 @@ $message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['message'
                     <li><?php esc_html_e('Download the complete static site as a ZIP file.', 'static-cache-wrangler'); ?></li>
                     <li><?php esc_html_e('Extract and open index.html in any browser - works completely offline!', 'static-cache-wrangler'); ?></li>
                 </ol>
+                <?php if ($is_multisite): ?>
+                <p style="margin-top:15px;padding:10px;background:#fff3cd;border-left:4px solid #ffc107;">
+                    <strong><?php esc_html_e('Multisite Note:', 'static-cache-wrangler'); ?></strong>
+                    <?php esc_html_e('Each site in your network has its own isolated static files directory. Generate and export sites independently.', 'static-cache-wrangler'); ?>
+                </p>
+                <?php endif; ?>
                 <h2 class="stcw-panel-title"><?php esc_html_e('Use Cases', 'static-cache-wrangler'); ?></h2>
                 <ol style="margin-left:20px;">
                     <li><?php esc_html_e('Generate a fully self-contained static version of a WordPress site for portability or offline use.', 'static-cache-wrangler'); ?></li>

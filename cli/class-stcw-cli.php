@@ -55,6 +55,13 @@ class STCW_CLI {
         $status = $enabled ? WP_CLI::colorize('%GEnabled%N') : WP_CLI::colorize('%RDisabled%N');
         WP_CLI::log("Static Generation: $status");
         
+        // Show multisite information
+        if (is_multisite()) {
+            WP_CLI::log("Multisite: " . WP_CLI::colorize('%YYes%N') . " (Site ID: " . get_current_blog_id() . ")");
+        } else {
+            WP_CLI::log("Multisite: No");
+        }
+        
         if ($enabled) {
             $count = STCW_Core::count_static_files();
             $static_size = STCW_Core::format_bytes(STCW_Core::get_directory_size());
