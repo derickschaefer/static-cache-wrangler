@@ -4,7 +4,7 @@ Tags: static site, html export, offline, wp-cli, performance
 Requires at least: 5.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.0.5
+Stable tag: 2.0.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -42,6 +42,10 @@ Unlike traditional static site plugins that require full re-builds or database s
 ---
 
 ### Key Features
+
+**What's New in 2.0.6:**
+
+Version 2.0.6 is a WordPress.org compliance update.  There is no new functionality or value to developers nor end users.  A prefix was added to template variables due to a release in the new check plugin functionality now flagging this.
 
 **What's New in 2.0.5:**
 
@@ -214,6 +218,10 @@ The meta tag removal only affects WordPress core tags, not SEO plugin meta tags 
 
 == Changelog ==
 
+= 2.0.6 =
+* **Release Code Name - Moving Goal Post**
+* Change all standard template variables to include the prefix stcw_ for WordPress.Org WordPress.NamingConventions.PrefixAllGlobals compliance.
+
 = 2.0.5 =
 * **Enhanced Static HTML Output**
 * Implemented hybrid WordPress meta tag removal using native `remove_action()` with regex safety net
@@ -286,6 +294,9 @@ The meta tag removal only affects WordPress core tags, not SEO plugin meta tags 
 ---
 
 == Upgrade Notice ==
+
+= 2.0.6 =
+Change all standard template variables to include the prefix stcw_ for WordPress.Org WordPress.NamingConventions.PrefixAllGlobals compliance.
 
 = 2.0.5 =
 Enhanced multisite support with isolated directories per site. Storage moved to wp-content/cache/stcw_static/ with unique namespace. Fully backward compatible for new installs. WordPress.org compliant.

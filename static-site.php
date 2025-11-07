@@ -3,7 +3,7 @@
  * Plugin Name: Static Cache Wrangler
  * Plugin URI: https://moderncli.dev/code/static-cache-wrangler/
  * Description: Generate static HTML files with fully local CSS/JS/Images/Fonts
- * Version: 2.0.5
+ * Version: 2.0.6
  * Author: Derick Schaefer
  * Author URI: https://moderncli.dev/author/
  * Text Domain: static-cache-wrangler
@@ -16,7 +16,7 @@
 if (!defined('ABSPATH')) exit;
 
 // Plugin constants
-define('STCW_VERSION', '2.0.5');
+define('STCW_VERSION', '2.0.6');
 define('STCW_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('STCW_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -68,14 +68,14 @@ define('STCW_PLUGIN_URL', plugin_dir_url(__FILE__));
  * define('STCW_ASSETS_DIR', WP_CONTENT_DIR . '/my-custom-assets/');
  */
 if (!defined('STCW_STATIC_DIR')) {
-    $base_dir = WP_CONTENT_DIR . '/cache/stcw_static/';
+    $stcw_base_dir = WP_CONTENT_DIR . '/cache/stcw_static/';
     
     // Add site-specific subdirectory for multisite installations
     if (is_multisite()) {
-        $base_dir .= 'site-' . get_current_blog_id() . '/';
+        $stcw_base_dir .= 'site-' . get_current_blog_id() . '/';
     }
     
-    define('STCW_STATIC_DIR', $base_dir);
+    define('STCW_STATIC_DIR', $stcw_base_dir);
 }
 
 if (!defined('STCW_ASSETS_DIR')) {

@@ -11,30 +11,30 @@
 
 if (!defined('ABSPATH')) exit;
 
-// Get status from STCW_Core
-$enabled = STCW_Core::is_enabled();
-$static_count = STCW_Core::count_static_files();
+// Get status from STCW_Core - prefix all variables for WordPress.org compliance
+$stcw_enabled = STCW_Core::is_enabled();
+$stcw_static_count = STCW_Core::count_static_files();
 
 // Get directories
-$static_dir = STCW_Core::get_static_dir();
-$assets_dir = STCW_Core::get_assets_dir();
+$stcw_static_dir = STCW_Core::get_static_dir();
+$stcw_assets_dir = STCW_Core::get_assets_dir();
 
 // Get asset counts from options
-$pending_assets = get_option('stcw_pending_assets', []);
-$downloaded_assets = get_option('stcw_downloaded_assets', []);
-$pending_count = is_array($pending_assets) ? count($pending_assets) : 0;
-$downloaded_count = is_array($downloaded_assets) ? count($downloaded_assets) : 0;
+$stcw_pending_assets = get_option('stcw_pending_assets', []);
+$stcw_downloaded_assets = get_option('stcw_downloaded_assets', []);
+$stcw_pending_count = is_array($stcw_pending_assets) ? count($stcw_pending_assets) : 0;
+$stcw_downloaded_count = is_array($stcw_downloaded_assets) ? count($stcw_downloaded_assets) : 0;
 
 // Calculate directory size
-$static_dir_size = STCW_Core::get_directory_size($static_dir);
-$dir_size_pretty = STCW_Core::format_bytes($static_dir_size);
+$stcw_static_dir_size = STCW_Core::get_directory_size($stcw_static_dir);
+$stcw_dir_size_pretty = STCW_Core::format_bytes($stcw_static_dir_size);
 
 // Check if multisite
-$is_multisite = is_multisite();
-$current_blog_id = $is_multisite ? get_current_blog_id() : 0;
+$stcw_is_multisite = is_multisite();
+$stcw_current_blog_id = $stcw_is_multisite ? get_current_blog_id() : 0;
 
 // Success messages
-$messages = [
+$stcw_messages = [
     'enabled'   => __('Static site generation enabled.', 'static-cache-wrangler'),
     'disabled'  => __('Static site generation disabled.', 'static-cache-wrangler'),
     'cleared'   => __('All static files cleared.', 'static-cache-wrangler'),
@@ -43,14 +43,14 @@ $messages = [
 
 // Safely get and validate the message parameter (nonce verified by admin-post.php handlers)
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified by admin-post.php action handlers
-$message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['message'])) : '';
+$stcw_message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['message'])) : '';
 ?>
 <div class="wrap">
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
 
-    <?php if ($message_key && isset($messages[$message_key])): ?>
+    <?php if ($stcw_message_key && isset($stcw_messages[$stcw_message_key])): ?>
         <div class="notice notice-success is-dismissible">
-            <p><?php echo esc_html($messages[$message_key]); ?></p>
+            <p><?php echo esc_html($stcw_messages[$stcw_message_key]); ?></p>
         </div>
     <?php endif; ?>
 
@@ -59,22 +59,22 @@ $message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['message'
         <!-- Generation Status Card -->
         <div class="stcw-card">
             <h3><?php esc_html_e('Generation Status', 'static-cache-wrangler'); ?></h3>
-            <div class="stcw-value <?php echo $enabled ? 'stcw-on' : 'stcw-off'; ?>">
-                <?php echo $enabled ? esc_html__('Running', 'static-cache-wrangler') : esc_html__('Paused', 'static-cache-wrangler'); ?>
+            <div class="stcw-value <?php echo $stcw_enabled ? 'stcw-on' : 'stcw-off'; ?>">
+                <?php echo $stcw_enabled ? esc_html__('Running', 'static-cache-wrangler') : esc_html__('Paused', 'static-cache-wrangler'); ?>
             </div>
             <div class="stcw-label">
                 <?php
-                $static_files_text = sprintf(
+                $stcw_static_files_text = sprintf(
                     /* translators: %s: formatted number of static files */
                     _n(
                         '%s static file',
                         '%s static files',
-                        $static_count,
+                        $stcw_static_count,
                         'static-cache-wrangler'
                     ),
-                    number_format_i18n($static_count)
+                    number_format_i18n($stcw_static_count)
                 );
-                echo esc_html($static_files_text);
+                echo esc_html($stcw_static_files_text);
                 ?>
             </div>
         </div>
@@ -83,24 +83,24 @@ $message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['message'
         <div class="stcw-card">
             <h3><?php esc_html_e('Assets', 'static-cache-wrangler'); ?></h3>
             <div class="stcw-value">
-                <?php echo esc_html(number_format_i18n($downloaded_count)); ?>
+                <?php echo esc_html(number_format_i18n($stcw_downloaded_count)); ?>
             </div>
             <div class="stcw-label">
                 <?php
-                $pending_text = sprintf(
+                $stcw_pending_text = sprintf(
                     /* translators: %s: formatted number of pending assets */
                     _n(
                         '%s pending',
                         '%s pending',
-                        $pending_count,
+                        $stcw_pending_count,
                         'static-cache-wrangler'
                     ),
-                    number_format_i18n($pending_count)
+                    number_format_i18n($stcw_pending_count)
                 );
-                echo esc_html($pending_text);
+                echo esc_html($stcw_pending_text);
                 ?>
 
-                <?php if ($pending_count > 0 && $enabled): ?>
+                <?php if ($stcw_pending_count > 0 && $stcw_enabled): ?>
                     <span aria-hidden="true" title="<?php esc_attr_e('Pending assets exist', 'static-cache-wrangler'); ?>">⚠</span>
                 <?php endif; ?>
             </div>
@@ -109,7 +109,7 @@ $message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['message'
         <!-- Total Size Card -->
         <div class="stcw-card">
             <h3><?php esc_html_e('Total Size', 'static-cache-wrangler'); ?></h3>
-            <div class="stcw-value"><?php echo esc_html($dir_size_pretty); ?></div>
+            <div class="stcw-value"><?php echo esc_html($stcw_dir_size_pretty); ?></div>
             <div class="stcw-label"><?php esc_html_e('Static directory footprint', 'static-cache-wrangler'); ?></div>
         </div>
     </div>
@@ -123,7 +123,7 @@ $message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['message'
                 <h2 class="stcw-panel-title"><?php esc_html_e('File System Locations', 'static-cache-wrangler'); ?></h2>
                 <table class="widefat" style="margin-top:10px;">
                     <tbody>
-                        <?php if ($is_multisite): ?>
+                        <?php if ($stcw_is_multisite): ?>
                         <tr>
                             <td style="width:220px;"><strong><?php esc_html_e('Multisite', 'static-cache-wrangler'); ?></strong></td>
                             <td>
@@ -132,24 +132,24 @@ $message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['message'
                                 echo ' ' . sprintf(
                                     /* translators: %d: blog/site ID number */
                                     esc_html__('(Site ID: %d)', 'static-cache-wrangler'),
-                                    absint($current_blog_id)
+                                    absint($stcw_current_blog_id)
                                 );
                                 ?>
                             </td>
                         </tr>
                         <?php endif; ?>
-                        <tr <?php echo $is_multisite ? '' : 'class="alternate"'; ?>>
+                        <tr <?php echo $stcw_is_multisite ? '' : 'class="alternate"'; ?>>
                             <td style="width:220px;"><strong><?php esc_html_e('Static Files', 'static-cache-wrangler'); ?></strong></td>
-                            <td><code><?php echo esc_html($static_dir); ?></code></td>
+                            <td><code><?php echo esc_html($stcw_static_dir); ?></code></td>
                         </tr>
                         <tr class="alternate">
                             <td><strong><?php esc_html_e('Assets Directory', 'static-cache-wrangler'); ?></strong></td>
-                            <td><code><?php echo esc_html($assets_dir); ?></code></td>
+                            <td><code><?php echo esc_html($stcw_assets_dir); ?></code></td>
                         </tr>
                         <tr>
                             <td><strong><?php esc_html_e('Directory Exists', 'static-cache-wrangler'); ?></strong></td>
                             <td>
-                                <?php if (is_dir($static_dir)): ?>
+                                <?php if (is_dir($stcw_static_dir)): ?>
                                     <span class="stcw-ok">✓ <?php esc_html_e('Yes', 'static-cache-wrangler'); ?></span>
                                 <?php else: ?>
                                     <span class="stcw-bad">✗ <?php esc_html_e('No', 'static-cache-wrangler'); ?></span>
@@ -159,7 +159,7 @@ $message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['message'
                         <tr class="alternate">
                             <td><strong><?php esc_html_e('Directory Writable', 'static-cache-wrangler'); ?></strong></td>
                             <td>
-                                <?php if (is_dir($static_dir) && wp_is_writable($static_dir)): ?>
+                                <?php if (is_dir($stcw_static_dir) && wp_is_writable($stcw_static_dir)): ?>
                                     <span class="stcw-ok">✓ <?php esc_html_e('Yes', 'static-cache-wrangler'); ?></span>
                                 <?php else: ?>
                                     <span class="stcw-bad">✗ <?php esc_html_e('No', 'static-cache-wrangler'); ?></span>
@@ -170,23 +170,23 @@ $message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['message'
                 </table>
             </div>
 
-            <?php if ($enabled && $pending_count > 0): ?>
+            <?php if ($stcw_enabled && $stcw_pending_count > 0): ?>
             <!-- Pending Assets Processing Panel -->
             <div class="stcw-panel stcw-card">
                 <h2 class="stcw-panel-title"><?php esc_html_e('Asset Processing', 'static-cache-wrangler'); ?></h2>
                 <p>
                 <?php
-                $assets_message = sprintf(
+                $stcw_assets_message = sprintf(
                     /* translators: %d: number of assets waiting to be downloaded */
                     _n(
                         'There is %d asset waiting to be downloaded.',
                         'There are %d assets waiting to be downloaded.',
-                        $pending_count,
+                        $stcw_pending_count,
                         'static-cache-wrangler'
                     ),
-                    $pending_count
+                    $stcw_pending_count
                 );
-                echo esc_html($assets_message);
+                echo esc_html($stcw_assets_message);
                 ?>	
                 </p>
                 <div id="stcw-processing-status" class="stcw-progress" style="display:none;">
@@ -214,7 +214,7 @@ $message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['message'
                     <li><?php esc_html_e('Download the complete static site as a ZIP file.', 'static-cache-wrangler'); ?></li>
                     <li><?php esc_html_e('Extract and open index.html in any browser - works completely offline!', 'static-cache-wrangler'); ?></li>
                 </ol>
-                <?php if ($is_multisite): ?>
+                <?php if ($stcw_is_multisite): ?>
                 <p style="margin-top:15px;padding:10px;background:#fff3cd;border-left:4px solid #ffc107;">
                     <strong><?php esc_html_e('Multisite Note:', 'static-cache-wrangler'); ?></strong>
                     <?php esc_html_e('Each site in your network has its own isolated static files directory. Generate and export sites independently.', 'static-cache-wrangler'); ?>
@@ -239,9 +239,9 @@ $message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['message'
                 <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top:15px;">
                     <?php wp_nonce_field('stcw_toggle_action', 'stcw_toggle_nonce'); ?>
                     <input type="hidden" name="action" value="stcw_toggle" />
-                    <input type="hidden" name="enable" value="<?php echo $enabled ? '0' : '1'; ?>" />
+                    <input type="hidden" name="enable" value="<?php echo $stcw_enabled ? '0' : '1'; ?>" />
 
-                    <?php if ($enabled): ?>
+                    <?php if ($stcw_enabled): ?>
                         <button type="submit" class="button button-secondary button-large" style="width:100%;margin-bottom:10px;">
                             <span class="dashicons dashicons-no" style="margin-top:3px;"></span>
                             <?php esc_html_e('Pause Generation', 'static-cache-wrangler'); ?>
@@ -254,7 +254,7 @@ $message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['message'
                     <?php endif; ?>
                 </form>
 
-                <?php if ($static_count > 0): ?>
+                <?php if ($stcw_static_count > 0): ?>
                     <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=stcw_download'), 'stcw_download_action')); ?>"
                        class="button button-primary button-large" style="width:100%;text-align:center;margin-bottom:10px;">
                         <span class="dashicons dashicons-download" style="margin-top:3px;"></span>
