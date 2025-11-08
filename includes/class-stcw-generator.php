@@ -155,7 +155,8 @@ class STCW_Generator {
     /**
      * Extract asset URLs from HTML
      *
-     * Finds CSS, JS, images, fonts, and other assets to download
+     * Finds CSS, JS, images, fonts, and other assets to download.
+     * Now includes processing of inline <style> blocks for background images.
      *
      * @param string $html HTML content
      * @return array Array of asset URLs
@@ -188,9 +189,22 @@ class STCW_Generator {
         preg_match_all('#<link[^>]+href=["\']([^"\']+\.(ico|png|svg|gif|jpg|jpeg|webp))["\'][^>]*>#i', $html, $icon_matches);
         $assets = array_merge($assets, $icon_matches[1]);
         
-        // Background images in inline styles
+        // Background images in inline style attributes
         preg_match_all('#style=["\'][^"\']*background(?:-image)?:\s*url\(["\']?([^"\')]+)["\']?\)[^"\']*["\']#i', $html, $bg_matches);
         $assets = array_merge($assets, $bg_matches[1]);
+        
+        // Background images in <style> blocks (inline CSS)
+        // This catches dynamically generated CSS from themes/plugins that reference uploads
+        preg_match_all('#<style[^>]*>(.*?)</style>#is', $html, $style_blocks);
+        if (!empty($style_blocks[1])) {
+            foreach ($style_blocks[1] as $css_content) {
+                // Extract all url() references from CSS
+                preg_match_all('#url\s*\(\s*["\']?([^"\')]+)["\']?\s*\)#i', $css_content, $css_urls);
+                if (!empty($css_urls[1])) {
+                    $assets = array_merge($assets, $css_urls[1]);
+                }
+            }
+        }
         
         // Filter to only same-host assets
         $filtered = [];
@@ -211,7 +225,8 @@ class STCW_Generator {
     /**
      * Rewrite asset paths to relative local paths
      *
-     * Changes absolute URLs to relative paths pointing to assets directory
+     * Changes absolute URLs to relative paths pointing to assets directory.
+     * Now includes rewriting of inline <style> blocks.
      *
      * @param string $html HTML content
      * @return string HTML with rewritten asset paths
@@ -313,6 +328,44 @@ class STCW_Generator {
                     return '<meta' . $m[1] . $m[2] . '="' . $m[3] . '"' . $m[4] . 'content="' . $assets_path . esc_attr($fn) . '"' . $m[6] . '>';
                 }
                 return $m[0];
+            },
+            $html
+        );
+
+        // Rewrite inline <style> blocks for background-image urls
+        // This handles dynamically generated CSS from themes/plugins
+        $html = preg_replace_callback(
+            '#<style([^>]*)>(.*?)</style>#is',
+            function($m) use ($assets_path) {
+                $style_attrs = $m[1];
+                $css_content = $m[2];
+                
+                // Rewrite url() references in CSS content
+                $css_content = preg_replace_callback(
+                    '#url\s*\(\s*["\']?([^"\')]+)["\']?\s*\)#i',
+                    function($url_match) use ($assets_path) {
+                        $url = trim($url_match[1], " \t\n\r\0\x0B'\"");
+                        
+                        // Skip data URIs and empty URLs
+                        if (empty($url) || stripos($url, 'data:') === 0) {
+                            return $url_match[0];
+                        }
+                        
+                        // Convert to absolute URL for checking
+                        $abs_url = $this->url_helper->absolute_url($url);
+                        
+                        // Only rewrite same-host URLs
+                        if ($this->url_helper->is_same_host($abs_url)) {
+                            $filename = $this->url_helper->filename_from_url($abs_url);
+                            return 'url(' . $assets_path . $filename . ')';
+                        }
+                        
+                        return $url_match[0];
+                    },
+                    $css_content
+                );
+                
+                return '<style' . $style_attrs . '>' . $css_content . '</style>';
             },
             $html
         );
