@@ -1,0 +1,202 @@
+Static Cache Wrangler - Performance Profiler (Developer Tool)
+==============================================================
+
+Overview
+--------
+The Static Cache Wrangler Performance Profiler is an free and **optional developer-only diagnostic tool** designed
+to benchmark and analyze the performance of Static Cache Wrangler (STCW). It provides deep insight into
+page generation times, memory usage, file I/O operations, and asynchronous asset downloads.
+
+This profiler is **not** active by default. It must be installed manually and explicitly enabled.
+
+The profiler is intended for use in development, staging, or CLI environments — **not in production**.
+
+Installation & Activation
+-------------------------
+1. Get the latest version of the MU Plugin from:
+   https://moderncli.dev/code/static-cache-wrangler/performance-profiler/
+         
+2. Place the file in your site's MU plugins directory:
+
+       /wp-content/mu-plugins/stcw-performance-profiler.php
+
+   If the `mu-plugins` directory does not exist, you can create it.
+
+3. Enable profiling by adding the following line to your `wp-config.php`:
+
+       define('STCW_PROFILING_ENABLED', true);
+
+   This constant controls whether profiling is active. When set to `false` or not defined,
+   the profiler is completely disabled and adds no overhead.
+
+
+CLI Usage
+---------
+Once installed and enabled, the profiler adds a new WP-CLI command group:
+
+    wp stcw profiler
+
+Available subcommands:
+
+  • wp stcw profiler stats
+      Display aggregate performance statistics including total profiles, file operations,
+      generation time averages, and async asset batch performance.
+
+      Example output:
+      ------------------------------------------------------------
+      Static Cache Wrangler - Performance Statistics
+      ============================================================
+      Total Profiles:          12
+      Total File Operations:   8
+
+      Generation Time
+        Average:  68.19 ms
+        Maximum:  173.52 ms
+        Minimum:  25.17 ms
+
+      Memory Usage
+        Average:  2.12 MB
+        Maximum:  6.82 MB
+
+      Async Asset Batches
+        Total Batches:  3
+        Average Time:   410.56 ms
+        Total Assets:   96
+      ------------------------------------------------------------
+
+  • wp stcw profiler logs [--count=<number>] [--format=<format>]
+      View recent individual profiling entries.
+      Displays two sections: "Page Generation Profiles" and "Async Asset Batches".
+
+      Examples:
+        wp stcw profiler logs
+        wp stcw profiler logs --count=20
+        wp stcw profiler logs --format=json
+
+      Example table output:
+      ------------------------------------------------------------
+      Page Generation Profiles
+      ------------------------------------------------------------
+      +------------------+-----------+----------+-------------+----------+---------------------+
+      | URL              | Time (ms) | Memory   | Peak Memory | File Ops | Timestamp           |
+      +------------------+-----------+----------+-------------+----------+---------------------+
+      | /overview/       | 61.5      | 1.9 MB   | 31.8 MB     | 1        | 2025-11-09 16:20:43 |
+      +------------------+-----------+----------+-------------+----------+---------------------+
+
+      Async Asset Batches
+      ------------------------------------------------------------
+      +-------------+--------------+-----------+-----------+--------+---------------------+
+      | Type        | Duration (ms)| Memory    | Processed | Failed | Timestamp           |
+      +-------------+--------------+-----------+-----------+--------+---------------------+
+      | Async Batch | 380.27       | 2.1 MB    | 28        | 0      | 2025-11-09 16:21:14 |
+      +-------------+--------------+-----------+-----------+--------+---------------------+
+      ------------------------------------------------------------
+
+  • wp stcw profiler clear
+      Clear all profiling data stored in the WordPress database.
+
+      Example:
+        wp stcw profiler clear
+
+      Output:
+        Success: Profiling logs cleared.
+
+  • wp stcw profiler export [--output=<path>]
+      Export all profiling data to a CSV file for offline analysis.
+      Default output path is `stcw-profiler-export.csv` in the current directory.
+
+      Example:
+        wp stcw profiler export --output=/tmp/stcw-data.csv
+
+      Output:
+        Success: Exported 27 profiles to: /tmp/stcw-data.csv
+
+
+Profiler Behavior
+-----------------
+When enabled, the profiler records:
+
+  - Page generation performance:
+      * Total time to generate static HTML pages
+      * Memory usage before and after page generation
+      * Peak PHP memory usage
+      * File I/O operations performed during page writes
+
+  - Asynchronous asset batch performance:
+      * Each asset batch processed by STCW’s background queue
+      * Total number of assets downloaded per batch
+      * Batch duration and memory usage
+
+All metrics are stored locally in the WordPress `wp_options` table under:
+
+      stcw_profiler_log
+
+Each entry is JSON-encoded and contains metadata such as:
+  - URL (for page profiles)
+  - Timestamps
+  - Duration (ms)
+  - Memory used and peak memory
+  - File operations and asset counts
+  - Async batch metrics
+
+
+Data Storage and Cleanup
+------------------------
+Profiling data is stored in WordPress as an option named:
+
+      stcw_profiler_log
+
+The MU plugin keeps the most recent 100 profiles by default.
+This retention limit can be customized with a filter:
+
+      add_filter('stcw_profiler_max_entries', function() { return 250; });
+
+To delete profiling data manually, run either:
+
+      wp stcw profiler clear
+  or
+      wp option delete stcw_profiler_log
+
+If you wish to reset asset caches used by Static Cache Wrangler, you can also delete:
+
+      wp option delete stcw_downloaded_assets
+      wp option delete stcw_pending_assets
+
+
+Disabling the Profiler
+----------------------
+To completely disable the profiler, simply set the constant to false or remove it:
+
+      define('STCW_PROFILING_ENABLED', false);
+
+The MU plugin remains installed but inactive.
+No profiling data is recorded or written to the database unless explicitly enabled.
+
+To remove all traces:
+  1. Delete `/wp-content/mu-plugins/stcw-performance-profiler.php`
+  2. Remove the constant from `wp-config.php`
+  3. Delete any remaining profiling options via WP-CLI:
+         wp option delete stcw_profiler_log
+
+
+Advanced Notes
+--------------
+• The profiler runs entirely locally — no data is transmitted externally.
+• It is compatible with WP-CLI, cron-driven static builds, and standard HTTP requests.
+• Profiling adds minimal overhead when active (< 1 ms average).
+• All profiler actions are gated behind the STCW_PROFILING_ENABLED constant.
+
+
+Learn More / Latest Version
+----------------------------
+For the latest version of the MU plugin and implementation notes, visit:
+
+   https://moderncli.dev/code/static-cache-wrangler/performance-profiler/
+
+That page provides updated releases, changelogs, and additional CLI usage examples.
+
+
+License
+-------
+GPL v2 or later
+https://www.gnu.org/licenses/gpl-2.0.html

@@ -140,14 +140,17 @@ class STCW_Generator {
             require_once ABSPATH . 'wp-admin/includes/file.php';
             WP_Filesystem();
         }
-
+	// Debug code for profiler
+	do_action('stcw_before_file_save', $static_file); 
         // Save static file using WP_Filesystem
         if ($wp_filesystem) {
             $wp_filesystem->put_contents($static_file, $static_output, FS_CHMOD_FILE);
         } else {
             stcw_log_debug('Failed to initialize WP_Filesystem for saving static file');
         }
-
+	
+	// Debug code for Profiler
+	do_action('stcw_after_file_save', true, $static_file);
         // Return original output unchanged for browser display
         return $output;
     }

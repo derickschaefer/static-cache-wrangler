@@ -55,6 +55,12 @@ class STCW_Asset_Handler {
      * Downloads assets in batches to avoid server overload
      */
     public function download_queued_assets() {
+
+        // Profiler hook – begin async batch
+        if (defined('STCW_PROFILING_ENABLED') && STCW_PROFILING_ENABLED) {
+            do_action('stcw_before_asset_batch');
+        }
+
         $assets = get_option('stcw_pending_assets', []);
         
         if (empty($assets)) {
@@ -91,7 +97,11 @@ class STCW_Asset_Handler {
             if (!wp_next_scheduled('stcw_process_assets')) {
                 wp_schedule_single_event(time() + 30, 'stcw_process_assets');
             }
-        }
+	}
+	    // Profiler hook – end async batch
+	    if (defined('STCW_PROFILING_ENABLED') && STCW_PROFILING_ENABLED) {
+	        do_action('stcw_after_asset_batch', $processed, $failed);
+	    }
     }
     
     /**
@@ -152,6 +162,12 @@ class STCW_Asset_Handler {
      * @return string|false Path to downloaded file or false on failure
      */
     public function download_to_assets($url, $retry = 0) {
+
+	// Optional profiling hook (only active if STCW_PROFILING_ENABLED)
+    	if (defined('STCW_PROFILING_ENABLED') && STCW_PROFILING_ENABLED) {
+        $url = apply_filters('stcw_before_asset_download', $url);
+	}
+
         $filename = $this->url_helper->filename_from_url($url);
         $dest = STCW_ASSETS_DIR . $filename;
 
@@ -222,9 +238,15 @@ class STCW_Asset_Handler {
             // Mark as downloaded
             $downloaded[] = $filename;
             update_option('stcw_downloaded_assets', array_unique($downloaded), false);
-        }
+	}
 
-        return $dest;
+	// Optional profiling hook (only active if STCW_PROFILING_ENABLED)
+	    if (defined('STCW_PROFILING_ENABLED') && STCW_PROFILING_ENABLED) {
+	        $result = apply_filters('stcw_after_asset_download', $dest, $url);
+	        return $result;
+	    }
+
+    return $dest;
     }
     
     /**

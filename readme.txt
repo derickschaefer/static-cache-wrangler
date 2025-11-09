@@ -20,6 +20,7 @@ Unlike traditional static site plugins that require full re-builds or database s
 * It does not add custom database tables or modify your schema.
 * All plugin options, cron jobs, and transients are automatically cleaned up upon uninstall.
 * Your WordPress database remains exactly as it was before installation.
+* An optional performance profiler allows developers and system admins to get a granular view of resources and performace related to this plugin.
 
 **Perfect for:**
 * Creating fully offline or portable copies of WordPress sites
@@ -45,7 +46,68 @@ Unlike traditional static site plugins that require full re-builds or database s
 
 **What's New in 2.0.6:**
 
-Version 2.0.6 is a WordPress.org compliance update.  There is no new functionality or value to developers nor end users.  A prefix was added to template variables due to a release in the new check plugin functionality now flagging this.
+= 2.0.6 =
+
+Version 2.0.6 is a **WordPress.org compliance release**.  
+This update ensures full compatibility with the latest repository validation standards introduced in 2025, requiring prefixed template variables and enhanced namespace isolation.  
+
+Although originally planned as a non-functional compliance update, we took the opportunity to introduce something valuable for developers — the foundation for advanced **performance profiling**.
+
+**Compliance & Compatibility**
+
+* **Prefix standardization** – All template variables, global references, and filters now use the `stcw_` prefix, satisfying the latest WordPress.org code scanning rules.  
+* **Improved code validation** – Passes 100% of the new “Check Plugin” API scan results.  
+* **Updated inline documentation** – Improved code clarity and compliance annotations.  
+
+**Developer Enhancements**
+
+New developer hooks were introduced to support the forthcoming **Static Cache Wrangler Performance Profiler**, an optional MU plugin for benchmarking and advanced diagnostics via WP-CLI.
+
+The following hooks are now available for use:
+
+* `stcw_before_file_save` — Fires immediately before a static file is written to disk.  
+  - **Parameters:** `$static_file` *(string)* — Path to the file being saved.  
+  - **Use Case:** Start timers, collect memory data, or monitor disk operations before file write.
+
+* `stcw_after_file_save` — Fires after a static file is successfully written.  
+  - **Parameters:** `$success` *(bool)* — True on success.  
+    `$static_file` *(string)* — The saved file path.  
+  - **Use Case:** Log, validate, or post-process generated static files.
+
+* `stcw_before_asset_download` — Allows inspection or modification of asset URLs before download.  
+  - **Parameters:** `$url` *(string)* — The original asset URL.  
+  - **Returns:** Filtered URL string.
+
+* `stcw_after_asset_download` — Executes after each asset download completes.  
+  - **Parameters:** `$dest` *(string)* — Destination path.  
+    `$url` *(string)* — Original URL.  
+  - **Returns:** Filtered destination path (optional).
+
+* `stcw_before_asset_batch` — Fires before an asynchronous asset download batch begins.  
+  - **Use Case:** Initialize timers or resource tracking for async performance measurement.
+
+* `stcw_after_asset_batch` — Fires after each asynchronous asset batch completes.  
+  - **Parameters:** `$processed` *(int)* — Number of assets processed successfully.  
+    `$failed` *(int)* — Number of failed downloads.  
+  - **Use Case:** Record async batch performance, memory usage, or queue diagnostics.
+
+**New Developer Tools Directory**
+
+A new `/tools/` directory has been added to the plugin to organize optional developer resources.  
+It currently includes:
+
+* `performance-profiler.txt` — A detailed guide describing how to install and use the optional **Performance Profiler** MU plugin for advanced benchmarking.
+
+Developers can download the latest version of the profiler from:  
+[https://moderncli.dev/code/static-cache-wrangler/performance-profiler/](https://moderncli.dev/code/static-cache-wrangler/performance-profiler/)
+
+**Summary**
+
+* Compliance with 2025 WordPress.org plugin repository standards.  
+* New developer hooks for performance profiling and async instrumentation.  
+* Added `/tools/performance-profiler.txt` developer documentation.  
+* No behavioral or UI changes for end users.  
+* Zero database impact — profiling features remain opt-in and inactive by default.
 
 **What's New in 2.0.5:**
 
