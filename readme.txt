@@ -12,22 +12,36 @@ Transform your WordPress site into a fully self-contained static website — fas
 
 == Description ==
 
-**Static Cache Wrangler** is a *lazy-loading, low-resource static cache and export engine* that automatically creates self-contained HTML versions of your WordPress site.  
+**Static Cache Wrangler** is a *lazy-loading, low-resource static cache and export engine* that automatically creates self-contained HTML versions of your WordPress site.  Orinally designed as a command-line interface (CLI), it is considered composable tooling that supports a number of administrator and site owner use cases. More specifically, it's perfect for anyone who wants to **preserve, distribute, or accelerate WordPress content** — whether you're archiving a client site, deploying to a CDN, or creating a portable offline version that just works anywhere.
 
-It's perfect for anyone who wants to **preserve, distribute, or accelerate WordPress content** — whether you're archiving a client site, deploying to a CDN, or creating a portable offline version that just works anywhere.
+Technically, this plugin uses an asyncronous mechanism to build URL agnostic static pages of your website as visitors render your site.  Once enabled, the plugin slowly builds your site.  (An upcoming, free assistant plugin will provide detailed monitoring and manually triggered full site processing of outstanding uncached pages.)
 
-Unlike traditional static site plugins that require full re-builds or database schema changes, **Static Cache Wrangler is zero-impact** —  
+Unlike traditional static site plugins that require full site crawls or database schema changes, **Static Cache Wrangler is zero-impact** —  
 * It does not add custom database tables or modify your schema.
 * All plugin options, cron jobs, and transients are automatically cleaned up upon uninstall.
 * Your WordPress database remains exactly as it was before installation.
+* By default all processes run asyncronously in the background.
 * An optional performance profiler allows developers and system admins to get a granular view of resources and performace related to this plugin.
 
 **Perfect for:**
 * Creating fully offline or portable copies of WordPress sites
 * Rsyncing to read-only Nginx failover servers for high availability
-* Publishing WordPress content to Amazon S3, Netlify, or static CDNs
+* Publishing WordPress content to Amazon S3®, Netlify®, or static CDNs
 * Geo-distributing cached static copies for fast global reads
 * Archiving, demos, and secure client deliverables
+* Sites 100 post + pages or less (assistant plugin will expand this to sites up to 1K post/pages)
+* Admins who need multi-site support
+
+**Detailed Testing and Profiling:**
+* Triggering of page rendering requires 1-2MB of PHP memory for the duration of the process.
+* Average processing duration is less than 500 ms (meaning memory consumption is quickly released)
+* Average asset (JS, CSS, image) batch processing is less than 100 ms
+* WordPress Core and theme rendering is generally 20-25 MB; SCW usage keeps total memory below 30 MB
+* CLI commands are even more efficient
+
+**Funding Model**
+* This plugin and all companion plugins will remain 100% free (true WordPress style)
+* Want to make a donation? Consider purchasing a copy of the author's book on command-line interfaces for yourself or as a gift.  https://moderncli.dev
 
 ---
 
@@ -35,7 +49,7 @@ Unlike traditional static site plugins that require full re-builds or database s
 
 1. Enable static site generation using the toggle in the sidebar.  
 2. As users browse your site normally, each page visit creates a static HTML file.  
-3. Assets (CSS, JS, images, fonts) are automatically downloaded and localized.  
+3. Assets (CSS, JS, images, fonts) are automatically are queued and asyncronously downloaded and localized.  
 4. Processing happens in the background and can be paused anytime.  
 5. Download the complete static site as a ZIP file.  
 6. Extract and open `index.html` in any browser — it works completely offline.
