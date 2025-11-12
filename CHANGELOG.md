@@ -2,6 +2,109 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.6] - 2025-11-11
+
+### WordPress.org Compliance Release
+
+This release ensures full compatibility with WordPress.org Plugin Directory validation requirements introduced in 2025, requiring prefixed template variables and enhanced namespace isolation.
+
+### Compliance & Code Quality
+- **MAJOR:** All template variables in admin views now use `stcw_` prefix for WordPress.org compliance
+- **IMPROVED:** Passes 100% WordPress.org Plugin Check validation (zero errors, zero warnings)
+- **ENHANCED:** Code clarity with consistent variable naming throughout templates
+- **UPDATED:** Inline documentation for better code understanding
+
+### Developer Features
+- **NEW HOOK:** `stcw_before_file_save` - fires immediately before static file write to disk
+  - **Parameters:** `$static_file` (string) - path to file being saved
+  - **Use Case:** Start timers, collect memory data, monitor disk operations
+  
+- **NEW HOOK:** `stcw_after_file_save` - fires after static file save completion
+  - **Parameters:** `$success` (bool) - true on success, `$static_file` (string) - saved file path
+  - **Use Case:** Log, validate, or post-process generated files
+  
+- **NEW HOOK:** `stcw_before_asset_download` - allows inspection/modification of asset URLs before download
+  - **Parameters:** `$url` (string) - original asset URL
+  - **Returns:** Filtered URL string
+  - **Use Case:** Transform URLs, add authentication, or skip certain assets
+  
+- **NEW HOOK:** `stcw_after_asset_download` - executes after each asset download completes
+  - **Parameters:** `$dest` (string) - destination path, `$url` (string) - original URL
+  - **Returns:** Filtered destination path (optional)
+  - **Use Case:** Validate downloads, optimize files, or log completion
+  
+- **NEW HOOK:** `stcw_before_asset_batch` - fires before asynchronous asset batch begins
+  - **Use Case:** Initialize timers, resource tracking for async performance
+  
+- **NEW HOOK:** `stcw_after_asset_batch` - fires after async asset batch completes
+  - **Parameters:** `$processed` (int) - assets processed successfully, `$failed` (int) - failed downloads
+  - **Use Case:** Record batch performance, memory usage, queue diagnostics
+
+### Performance Profiling
+- **NEW:** Foundation for optional Performance Profiler MU plugin
+- **NEW:** `/tools/` directory with developer documentation
+- **NEW:** `/tools/performance-profiler.txt` - complete profiling installation guide
+- **ENHANCED:** Profiling hooks enable detailed benchmarking without core modifications
+- **ZERO OVERHEAD:** All profiling features inactive by default unless explicitly enabled
+- **WP-CLI READY:** Profiler adds `wp stcw profiler` command group for performance analysis
+
+### Performance Profiler Features (Optional MU Plugin)
+When installed and enabled, the profiler provides:
+- **Page generation metrics** - time, memory, peak memory, file I/O operations
+- **Asset batch analytics** - duration, memory, success/failure rates
+- **WP-CLI commands:**
+  - `wp stcw profiler stats` - aggregate performance statistics
+  - `wp stcw profiler logs` - view recent profiling entries
+  - `wp stcw profiler clear` - remove all profiling data
+  - `wp stcw profiler export` - export data to CSV for analysis
+- **Retention management** - automatically maintains most recent 100 entries (configurable)
+- **Zero external dependencies** - all data stored locally in WordPress options table
+
+### Documentation
+- **ADDED:** Complete performance profiling guide in `/tools/performance-profiler.txt`
+- **ADDED:** Developer hook usage examples with real-world scenarios
+- **UPDATED:** README.md with profiling installation instructions
+- **UPDATED:** Code comments throughout for better maintainability
+- **ADDED:** Performance profiler download link: [moderncli.dev/code/static-cache-wrangler/performance-profiler/](https://moderncli.dev/code/static-cache-wrangler/performance-profiler/)
+
+### Compatibility
+- **TESTED:** WordPress 6.8.3
+- **TESTED:** PHP 7.4, 8.0, 8.1, 8.2, 8.3
+- **COMPATIBLE:** All major themes and page builders
+- **COMPATIBLE:** Multisite with isolated storage per site
+- **COMPATIBLE:** All WP-CLI versions
+
+### Migration Notes
+- **NO BREAKING CHANGES:** Fully backward compatible with 2.0.5
+- **OPTIONAL:** Install Performance Profiler MU plugin for advanced diagnostics
+- **RECOMMENDED:** Review new hooks if building companion plugins or integrations
+- **NOTE:** Profiling features require manual installation and opt-in activation
+
+### Files Changed
+- `admin/views/admin-page.php` - Template variable prefixing (WordPress.org compliance)
+- `includes/class-stcw-core.php` - Added profiling hooks in file operations
+- `includes/class-stcw-asset-handler.php` - Added profiling hooks in asset downloads
+- `includes/class-stcw-generator.php` - Added profiling hooks in generation process
+- `tools/performance-profiler.txt` - New developer documentation
+- `README.md` - Added profiling documentation and hook examples
+- `CHANGELOG.md` - This file
+- `readme.txt` - WordPress.org plugin directory description
+
+### Developer Benefits
+- ✅ **Zero-impact profiling** - No overhead unless explicitly enabled
+- ✅ **Non-invasive hooks** - Monitor without modifying core plugin code
+- ✅ **Extensible architecture** - Foundation for companion plugins and SaaS integrations
+- ✅ **Production-safe** - Profiling completely disabled by default
+- ✅ **CLI-focused** - All profiling operations via WP-CLI for automation
+- ✅ **Open architecture** - Use hooks for custom monitoring solutions
+
+### Summary
+Version 2.0.6 is primarily a WordPress.org compliance release with enhanced developer capabilities. While there are no user-facing changes or new features for end users, this release establishes the foundation for advanced performance monitoring and provides developers with powerful hooks for building companion plugins and custom integrations.
+
+The optional Performance Profiler MU plugin showcases how these hooks can be used to create sophisticated monitoring tools without modifying the core plugin.
+
+---
+
 ## [2.0.5] - 2025-10-25
 
 ### Enhanced Static HTML Output
@@ -74,6 +177,8 @@ All notable changes to this project will be documented in this file.
 - ✅ **Extensible**: Two new hooks enable companion plugins and customization
 - ✅ **Professional Output**: Framework-agnostic HTML suitable for any deployment
 
+---
+
 ## [2.0.4] - 2025-10-22
 
 ### Major WordPress.org Compliance & Refactor Release
@@ -91,11 +196,13 @@ All notable changes to this project will be documented in this file.
 - **BREAKING:** Sites upgrading from `Static Cache Generator` must deactivate and remove the old plugin before activating `Static Cache Wrangler`.
 - Existing static files should be cleared and regenerated for full compatibility.
 - Command reference:  
-  ```bash
+```bash
   wp scw clear
   wp scw enable
   wp scw process
-  ```
+```
+
+---
 
 ## [2.0.3] - 2025-10-18
 
@@ -114,6 +221,8 @@ All notable changes to this project will be documented in this file.
 - Static files need to be regenerated
 - Clear all files: `wp scw clear`
 - Re-enable and regenerate
+
+---
 
 ## [2.0.2] - 2025-10-09
 
@@ -180,6 +289,8 @@ All notable changes to this project will be documented in this file.
 - Removed error suppression operators where proper error handling exists
 - Removed redundant null checks (using null coalescing instead)
 
+---
+
 ## [2.0.1] - 2025-10-08
 
 ### Security
@@ -224,6 +335,8 @@ All notable changes to this project will be documented in this file.
 - Error suppression (`@`) from `rmdir()` and `unlink()` operations
 - Support for video and audio file downloads (intentional, to reduce disk usage)
 
+---
+
 ## [2.0.0] - 2025-01-15
 
 ### Added
@@ -243,6 +356,8 @@ All notable changes to this project will be documented in this file.
 - Directory size calculation working properly
 - Namespace conflicts resolved in admin view
 - Asset processing AJAX handler properly registered
+
+---
 
 ## [1.0.0] - 2024-12-01
 

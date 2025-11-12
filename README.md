@@ -28,6 +28,35 @@ Static Cache Wrangler automatically creates static HTML versions of your WordPre
 - **WP-CLI support** - Full command-line control
 - **One-click export** - Download entire static site as ZIP
 - **Developer hooks** - Extensible API for companion plugins (v2.0.5+)
+- **Performance profiling** - Optional developer tools for benchmarking (v2.0.6+)
+- **Multisite support** - Isolated storage per site with unique namespaces
+
+## What's New in 2.0.6
+
+**WordPress.org Compliance Release:**
+- All template variables now use `stcw_` prefix for full compliance
+- Passes 100% WordPress.org plugin validation
+- Enhanced code clarity and documentation
+
+**Developer Enhancements:**
+- New profiling hooks for performance monitoring
+- Foundation for optional Performance Profiler MU plugin
+- Added `/tools/` directory with developer documentation
+
+**New Developer Hooks:**
+- `stcw_before_file_save` - Fires before static file write
+- `stcw_after_file_save` - Fires after file save completion
+- `stcw_before_asset_download` - Pre-process asset URLs
+- `stcw_after_asset_download` - Post-process downloaded assets
+- `stcw_before_asset_batch` - Start of async batch processing
+- `stcw_after_asset_batch` - End of async batch processing
+
+**Optional Performance Profiler:**
+- WP-CLI commands for performance analysis
+- Zero overhead when disabled
+- Detailed metrics for page generation and asset processing
+- See `/tools/performance-profiler.txt` for installation guide
+- Download latest version: [moderncli.dev/code/static-cache-wrangler/performance-profiler/](https://moderncli.dev/code/static-cache-wrangler/performance-profiler/)
 
 ## What's New in 2.0.5
 
@@ -43,7 +72,6 @@ Static Cache Wrangler automatically creates static HTML versions of your WordPre
 - Extensibility for companion plugins
 
 ## Screenshots
-
 ```
 ┌─────────────────────────────────────────────────────────┐
 │ Generation Status │ Assets  │ Total Size                │
@@ -52,8 +80,8 @@ Static Cache Wrangler automatically creates static HTML versions of your WordPre
 └─────────────────────────────────────────────────────────┘
 
 File System Locations
-├── Static Files:  /wp-content/cache/_static/
-├── Assets:        /wp-content/cache/_static/assets/
+├── Static Files:  /wp-content/cache/stcw_static/
+├── Assets:        /wp-content/cache/stcw_static/assets/
 ├── Writable:      ✓ Yes
 └── Size:          4.2 MB
 ```
@@ -67,13 +95,11 @@ File System Locations
 3. Upload and activate
 
 ### Via WP-CLI
-
 ```bash
 wp plugin install static-cache-wrangler --activate
 ```
 
 ### Manual Installation
-
 ```bash
 cd wp-content/plugins
 git clone https://github.com/derickschaefer/static-cache-wrangler.git
@@ -90,7 +116,6 @@ wp plugin activate static-cache-wrangler
 4. Click **Download ZIP** when ready
 
 ### CLI Method
-
 ```bash
 # Enable generation
 wp scw enable
@@ -109,7 +134,6 @@ wp scw clear
 ```
 
 ## How It Works
-
 ```
 ┌─────────────┐      ┌──────────────┐      ┌─────────────┐
 │   Visitor   │─────>│  WordPress   │─────>│ Static File │
@@ -136,7 +160,6 @@ wp scw clear
 5. **Static file saved** → Complete, portable HTML file created
 
 ## Architecture
-
 ```
 static-cache-wrangler/
 ├── admin/
@@ -145,7 +168,8 @@ static-cache-wrangler/
 │   ├── css/
 │   │   └── admin-style.css       # Admin dashboard styles
 │   ├── js/
-│   │   └── admin-script.js       # Admin dashboard JavaScript
+│   │   ├── admin-script.js       # Admin dashboard JavaScript
+│   │   └── stcw-admin-bar-handler.js # Admin bar handler
 │   └── views/
 │       └── admin-page.php        # Main settings UI
 ├── cli/
@@ -158,6 +182,8 @@ static-cache-wrangler/
 │   ├── stcw-logger.php               # Debug logging utility
 │   └── js/
 │       └── auto-process.js           # Background asset processing
+├── tools/
+│   └── performance-profiler.txt      # Developer profiling guide
 └── static-site.php                   # Main plugin file
 ```
 
@@ -171,7 +197,6 @@ Disable static site generation.
 
 ### `wp scw status`
 Display current status and statistics.
-
 ```bash
 $ wp scw status
 Static Generation: Enabled
@@ -179,13 +204,12 @@ Static Files: 23
 Total Size: 4.2 MB
 Pending Assets: 3
 Downloaded Assets: 152
-Static Directory: /var/www/html/wp-content/cache/_static/
-Assets Directory: /var/www/html/wp-content/cache/_static/assets/
+Static Directory: /var/www/html/wp-content/cache/stcw_static/
+Assets Directory: /var/www/html/wp-content/cache/stcw_static/assets/
 ```
 
 ### `wp scw process`
 Process all pending asset downloads immediately.
-
 ```bash
 $ wp scw process
 Processing pending assets...
@@ -196,7 +220,6 @@ Downloaded 45 assets successfully!
 
 ### `wp scw clear`
 Remove all generated static files and assets.
-
 ```bash
 $ wp scw clear
 All static files cleared.
@@ -207,7 +230,6 @@ Create a ZIP archive of the complete static site.
 
 **Options:**
 - `--output=<path>` - Specify custom output path
-
 ```bash
 # Default location
 $ wp scw zip
@@ -223,7 +245,6 @@ ZIP created: /tmp/mysite.zip (4.2 MB)
 The plugin works with sensible defaults, but you can customize behavior:
 
 ### Constants (in `wp-config.php`)
-
 ```php
 // Change static files location
 define('STCW_STATIC_DIR', WP_CONTENT_DIR . '/my-static-files/');
@@ -236,7 +257,6 @@ define('STCW_ASYNC_ASSETS', false);
 ```
 
 ### Developer Hooks (v2.0.5+)
-
 ```php
 // Remove additional WordPress head tags
 add_action('stcw_remove_wp_head_tags', function() {
@@ -258,7 +278,76 @@ add_filter('stcw_should_generate', function($should_generate, $url) {
 }, 10, 2);
 ```
 
+### Performance Profiling Hooks (v2.0.6+)
+```php
+// Enable profiling (requires Performance Profiler MU plugin)
+define('STCW_PROFILING_ENABLED', true);
+
+// Hook into file save events
+add_action('stcw_before_file_save', function($static_file) {
+    // Start timer or log file path
+    error_log('Saving: ' . $static_file);
+});
+
+add_action('stcw_after_file_save', function($success, $static_file) {
+    // Log completion
+    error_log('Saved: ' . $static_file . ' - Success: ' . ($success ? 'Yes' : 'No'));
+}, 10, 2);
+
+// Monitor asset downloads
+add_filter('stcw_before_asset_download', function($url) {
+    error_log('Downloading: ' . $url);
+    return $url;
+});
+
+add_filter('stcw_after_asset_download', function($dest, $url) {
+    error_log('Downloaded: ' . $url . ' to ' . $dest);
+    return $dest;
+}, 10, 2);
+
+// Track async batch performance
+add_action('stcw_before_asset_batch', function() {
+    error_log('Starting asset batch...');
+});
+
+add_action('stcw_after_asset_batch', function($processed, $failed) {
+    error_log("Batch complete: $processed processed, $failed failed");
+}, 10, 2);
+```
+
 See the [Developer Examples](https://github.com/derickschaefer/static-cache-wrangler/wiki/Developer-Examples) for more hook usage patterns.
+
+## Performance Profiling
+
+Version 2.0.6 introduces optional performance profiling capabilities through developer hooks. These hooks enable the **Static Cache Wrangler Performance Profiler** MU plugin, which provides detailed benchmarking and analysis via WP-CLI.
+
+**Installation:**
+1. Download the profiler from [moderncli.dev/code/static-cache-wrangler/performance-profiler/](https://moderncli.dev/code/static-cache-wrangler/performance-profiler/)
+2. Place in `/wp-content/mu-plugins/stcw-performance-profiler.php`
+3. Enable in `wp-config.php`: `define('STCW_PROFILING_ENABLED', true);`
+
+**WP-CLI Commands:**
+```bash
+# View performance statistics
+wp stcw profiler stats
+
+# View recent profiling logs
+wp stcw profiler logs
+
+# Export profiling data to CSV
+wp stcw profiler export --output=/tmp/stcw-data.csv
+
+# Clear profiling data
+wp stcw profiler clear
+```
+
+**What Gets Profiled:**
+- Page generation time and memory usage
+- File I/O operations
+- Asset download performance
+- Async batch processing metrics
+
+See `/tools/performance-profiler.txt` for complete documentation.
 
 ## Asset Handling
 
@@ -295,13 +384,13 @@ If you use a plugin that generates favicons dynamically:
 
 1. Generate your static site normally
 2. Locate your favicon files (usually in `/wp-content/uploads/` or theme directory)
-3. Manually copy them to `/wp-content/cache/_static/assets/`
+3. Manually copy them to `/wp-content/cache/stcw_static/assets/`
 4. If needed, update the HTML in your static files to reference the correct paths
 
 Example:
 ```bash
 # Copy dynamically generated favicons
-cp /wp-content/uploads/fbrfg/* /wp-content/cache/_static/assets/
+cp /wp-content/uploads/fbrfg/* /wp-content/cache/stcw_static/assets/
 
 # Re-create ZIP with updated favicons
 wp scw zip
@@ -319,7 +408,6 @@ wp scw zip
 ## Use Cases
 
 ### 1. Offline Documentation
-
 ```bash
 wp scw enable
 # Browse all documentation pages
@@ -330,7 +418,6 @@ wp scw zip --output=/docs/offline-docs.zip
 ### 2. Client Deliverables
 
 Export a complete static version for clients who don't need WordPress:
-
 ```bash
 wp scw enable
 # Browse site
@@ -339,7 +426,6 @@ wp scw zip
 ```
 
 ### 3. Archive Before Redesign
-
 ```bash
 wp scw enable
 # Crawl entire site with wget or similar
@@ -351,7 +437,6 @@ wp scw disable
 ### 4. CDN-Free Deployment
 
 Deploy the static site to any web server without WordPress dependencies:
-
 ```bash
 wp scw enable
 wp scw process
@@ -370,7 +455,6 @@ wp scw zip
 - **Permissions:** Write access to `wp-content/cache/`
 
 ### Ubuntu/Nginx Setup
-
 ```bash
 # Install PHP ZIP extension
 sudo apt-get install php-zip
@@ -438,19 +522,19 @@ sudo systemctl restart php7.4-fpm nginx
 
 **Check if favicon is in HTML:**
 ```bash
-# View page source and look for <link rel="icon">
+# View page source and look for 
 curl https://your-site.com | grep favicon
 ```
 
 **Manually copy favicon files:**
 ```bash
 # If using a favicon generator plugin
-cp /wp-content/uploads/fbrfg/* /wp-content/cache/_static/assets/
+cp /wp-content/uploads/fbrfg/* /wp-content/cache/stcw_static/assets/
 ```
 
 **Use a simple favicon.ico:**
 ```bash
-# Place in WordPress root - works without <link> tag
+# Place in WordPress root - works without  tag
 cp favicon.ico /var/www/html/favicon.ico
 ```
 
@@ -463,7 +547,7 @@ cp favicon.ico /var/www/html/favicon.ico
 
 ## Disk Space Considerations
 
-The plugin stores static files in `wp-content/cache/_static/`. Disk usage varies based on your site:
+The plugin stores static files in `wp-content/cache/stcw_static/`. Disk usage varies based on your site:
 
 **Typical Disk Usage:**
 - **Small site** (10-50 pages): 50-200 MB
@@ -490,7 +574,7 @@ The plugin stores static files in `wp-content/cache/_static/`. Disk usage varies
 wp scw clear
 
 # Or manually delete old files
-rm -rf /var/www/html/wp-content/cache/_static/*
+rm -rf /var/www/html/wp-content/cache/stcw_static/*
 ```
 
 **Exclude large pages from generation:**
@@ -507,23 +591,23 @@ add_filter('stcw_should_generate', function($should, $url) {
 ### Optimization Tips
 
 1. **Process assets during off-peak hours:**
-   ```bash
+```bash
    # Add to crontab
    0 2 * * * /usr/bin/wp scw process --path=/var/www/html
-   ```
+```
 
 2. **Disable on high-traffic pages:**
-   ```php
+```php
    add_filter('stcw_should_generate', function($should, $url) {
        return !is_front_page() && $should;
    }, 10, 2);
-   ```
+```
 
 3. **Clear old static files regularly:**
-   ```bash
+```bash
    # Weekly cleanup
    0 3 * * 0 /usr/bin/wp scw clear --path=/var/www/html
-   ```
+```
 
 **Best practices:**
 - Optimize images before generating static site (use image optimization plugins)
@@ -533,6 +617,44 @@ add_filter('stcw_should_generate', function($should, $url) {
 
 **Video and Audio Files:**  
 The plugin intentionally does not download video (MP4, WebM) or audio (MP3, WAV) files. These should remain on your WordPress server or external hosting (YouTube, CDN). The static HTML will link to these resources.
+
+## Multisite Support
+
+Version 2.0.6 includes full multisite support with isolated storage per site:
+
+**Storage Structure:**
+```
+wp-content/cache/stcw_static/
+├── site-1/        # Main site (blog_id 1)
+│   ├── index.html
+│   └── assets/
+├── site-2/        # Blog ID 2
+│   ├── index.html
+│   └── assets/
+└── site-3/        # Blog ID 3
+    ├── index.html
+    └── assets/
+```
+
+**Each site maintains:**
+- Separate static file directories
+- Independent asset storage
+- Isolated plugin options
+- Site-specific WP-CLI commands
+
+**Using WP-CLI with Multisite:**
+```bash
+# Operate on specific site
+wp scw enable --url=site2.example.com
+
+# Or use --url parameter
+wp scw status --url=site2.example.com
+
+# Process all sites (loop through)
+for site in $(wp site list --field=url); do
+    wp scw enable --url=$site
+done
+```
 
 ## Contributing
 
@@ -545,7 +667,6 @@ Contributions are welcome! Please follow these guidelines:
 5. Open a Pull Request
 
 ### Development Setup
-
 ```bash
 git clone https://github.com/derickschaefer/static-cache-wrangler.git
 cd static-cache-wrangler
@@ -562,7 +683,6 @@ composer install  # If you add Composer dependencies later
 ## License
 
 This plugin is licensed under the GPL v2 or later.
-
 ```
 Copyright (C) 2025 Derick Schaefer
 
@@ -573,7 +693,6 @@ the Free Software Foundation; either version 2 of the License, or
 ```
 
 ## Trademark Recognition and Legal Disclaimer
-
 ```
 All product names, logos, and brands referenced in this plugin and its documentation are property of their respective owners.
 
@@ -616,57 +735,8 @@ This plugin is an independent open-source project and is **not endorsed by, affi
 - [ ] URL include/exclude patterns with wildcards
 - [ ] Built-in search functionality for static sites
 - [ ] Companion plugin marketplace
+- [ ] Enhanced performance profiling dashboard
 
 ## Changelog
-
-## [2.0.5] - 2025-10-25
-
-### Enhanced Static HTML Output
-- Implemented hybrid WordPress meta tag removal (native `remove_action()` + regex safety net)
-- Removed 7+ WordPress-specific meta tags: RSD, wlwmanifest, shortlinks, generator, REST API, oEmbed
-- Stripped `data-wp-strategy` attributes for cleaner HTML output
-- Reduced HTML file size by 3.1% and generation time by 2.3%
-
-### Developer API
-- **NEW:** `stcw_remove_wp_head_tags` action hook for removing additional WordPress tags
-- **NEW:** `stcw_process_static_html` filter hook for modifying HTML before save
-- Added `STCW_Generator::remove_wordpress_meta_tags()` method
-- Enhanced extensibility for companion plugins and theme integration
-
-### Improvements
-- Better security: WordPress version no longer exposed
-- Fully portable HTML without WordPress metadata
-- Comprehensive PHPDoc documentation
-- Backward compatible with 2.0.4
-
-### Files Changed
-- `includes/class-stcw-generator.php` - Major enhancement
-
-**Migration:** Optional - run `wp scw clear && wp scw enable` for cleanest output
-
----
-
-## [2.0.4] - 2025-10-22
-
-### Major WordPress.org Compliance & Refactor Release
-- **MAJOR:** Comprehensive compliance overhaul aligning with WordPress.org Plugin Directory and Coding Standards.
-- **RENAME:** Plugin slug, text domain, and directory changed from `static-cache-generator` → `static-cache-wrangler` to meet naming and trademark requirements.
-- **NAMESPACE:** All internal class and function prefixes updated from `STCG` → `STCW` (4+ character namespace compliance).
-- **I18N:** Unified text domains and translation calls across all PHP files for full localization validation.
-- **STRUCTURE:** Updated folder structure, includes, and autoload paths for modern compatibility.
-- **ADMIN UI:** Refactored admin views and templates for cleaner markup, translation readiness, and better accessibility.
-- **CLI:** Confirmed namespace and command base as `scw` (formerly `scg`), removed legacy aliases for clarity.
-- **REPO:** Updated all GitHub references, assets, and documentation links to reflect the new canonical project name.
-- **PACKAGING:** Cleaned distribution process and `.zip` exports to exclude development assets, node_modules, vendor directories, and internal build scripts.
-
-### Migration Notes
-- **BREAKING:** Sites upgrading from `Static Cache Generator` must deactivate and remove the old plugin before activating `Static Cache Wrangler`.
-- Existing static files should be cleared and regenerated for full compatibility.
-- Command reference:  
-  ```bash
-  wp scw clear
-  wp scw enable
-  wp scw process
-  ```
 
 See [CHANGELOG.md](CHANGELOG.md) for complete version history.
