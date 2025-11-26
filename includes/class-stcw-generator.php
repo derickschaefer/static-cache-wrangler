@@ -26,6 +26,12 @@ class STCW_Generator {
     private $url_helper;
     
     /**
+     * Rendered scripts buffer
+     * @var string
+     */
+    private $stcw_rendered_scripts = '';
+    
+    /**
      * Constructor - initialize dependencies
      */
     public function __construct() {
@@ -96,15 +102,17 @@ class STCW_Generator {
         
         // Remove WordPress-specific meta tags before generating output
         // This prevents them from being added in the first place
-	$this->remove_wordpress_meta_tags();
-
-	// Flush WP script queues into an isolated buffer BEFORE capturing output
-	ob_start();
-	wp_print_head_scripts();
-	wp_print_scripts();
-	wp_print_footer_scripts();
-	$this->stcw_rendered_scripts = ob_get_clean();
-
+        $this->remove_wordpress_meta_tags();
+        
+        // Flush WP script queues into an isolated buffer BEFORE capturing output
+        // This ensures dynamically enqueued scripts (Kadence, Gutenberg blocks, etc.)
+        // are captured before theme rendering begins
+        ob_start();
+        wp_print_head_scripts();
+        wp_print_scripts();
+        wp_print_footer_scripts();
+        $this->stcw_rendered_scripts = ob_get_clean();
+        
         // Start output buffering with callback
         ob_start([$this, 'save_output']);
     }
@@ -125,14 +133,15 @@ class STCW_Generator {
         if (!is_dir($static_dir)) {
             wp_mkdir_p($static_dir);
         }
-
-	// Now continue normally
-        $static_output = $output;
+        
+        // Append rendered scripts to output before processing
+        // This ensures regex-based asset extraction catches dynamically enqueued assets
+        $static_output = $this->stcw_rendered_scripts . $output;
         
         // Process assets asynchronously if enabled
         if (STCW_ASYNC_ASSETS) {
             $static_output = $this->rewrite_asset_paths($static_output);
-            $assets = $this->extract_asset_urls($output);
+            $assets = $this->extract_asset_urls($static_output);
             $this->asset_handler->queue_asset_downloads($assets);
         }
         
@@ -141,24 +150,28 @@ class STCW_Generator {
         
         // Add metadata and clean up WordPress-specific tags
         $static_output = $this->process_static_html($static_output);
-
+        
         // Initialize WP_Filesystem
         global $wp_filesystem;
         if (empty($wp_filesystem)) {
             require_once ABSPATH . 'wp-admin/includes/file.php';
             WP_Filesystem();
         }
-	// Debug code for profiler
-	do_action('stcw_before_file_save', $static_file); 
+        
+        // Profiling hook - before file save
+        do_action('stcw_before_file_save', $static_file);
+        
         // Save static file using WP_Filesystem
         if ($wp_filesystem) {
-            $wp_filesystem->put_contents($static_file, $static_output, FS_CHMOD_FILE);
+            $success = $wp_filesystem->put_contents($static_file, $static_output, FS_CHMOD_FILE);
         } else {
             stcw_log_debug('Failed to initialize WP_Filesystem for saving static file');
+            $success = false;
         }
-	
-	// Debug code for Profiler
-	do_action('stcw_after_file_save', true, $static_file);
+        
+        // Profiling hook - after file save
+        do_action('stcw_after_file_save', $success, $static_file);
+        
         // Return original output unchanged for browser display
         return $output;
     }
@@ -167,7 +180,7 @@ class STCW_Generator {
      * Extract asset URLs from HTML
      *
      * Finds CSS, JS, images, fonts, and other assets to download.
-     * Now includes processing of inline <style> blocks for background images.
+     * Includes processing of inline <style> blocks for background images.
      *
      * @param string $html HTML content
      * @return array Array of asset URLs
@@ -237,7 +250,7 @@ class STCW_Generator {
      * Rewrite asset paths to relative local paths
      *
      * Changes absolute URLs to relative paths pointing to assets directory.
-     * Now includes rewriting of inline <style> blocks.
+     * Includes rewriting of inline <style> blocks.
      *
      * @param string $html HTML content
      * @return string HTML with rewritten asset paths
@@ -267,7 +280,7 @@ class STCW_Generator {
             },
             $html
         );
-
+        
         // Rewrite <script> tags
         $html = preg_replace_callback(
             '#<script([^>]*?)src=["\']([^"\']+\.js[^"\']*)["\']([^>]*)></script>#i',
@@ -281,7 +294,7 @@ class STCW_Generator {
             },
             $html
         );
-
+        
         // Rewrite <img> tags (including srcset)
         $html = preg_replace_callback(
             '#<img([^>]*?)src=["\']([^"\']+)["\']([^>]*)>#i',
@@ -314,7 +327,7 @@ class STCW_Generator {
             },
             $html
         );
-
+        
         // Rewrite video/source tags
         $html = preg_replace_callback(
             '#<(source|video)([^>]*?)(src|poster)=["\']([^"\']+)["\']([^>]*)>#i',
@@ -328,7 +341,7 @@ class STCW_Generator {
             },
             $html
         );
-
+        
         // Rewrite meta tags (og:image, twitter:image)
         $html = preg_replace_callback(
             '#<meta([^>]+)(property|name)=[\'"](og:image|twitter:image)[\'"]([^>]+)content=[\'"]([^\'"]+)[\'"]([^>]*)>#i',
@@ -342,7 +355,7 @@ class STCW_Generator {
             },
             $html
         );
-
+        
         // Rewrite inline <style> blocks for background-image urls
         // This handles dynamically generated CSS from themes/plugins
         $html = preg_replace_callback(
@@ -380,7 +393,7 @@ class STCW_Generator {
             },
             $html
         );
-
+        
         return $html;
     }
     
@@ -400,7 +413,7 @@ class STCW_Generator {
             '#<a([^>]+)href=["\']([^"\']+)["\']#i',
             function($m) use ($depth_prefix) {
                 $href = html_entity_decode($m[2]);
-
+                
                 // Skip special links
                 if (
                     stripos($href, 'mailto:') === 0 ||
@@ -411,14 +424,14 @@ class STCW_Generator {
                 ) {
                     return $m[0];
                 }
-
+                
                 $abs = $this->url_helper->absolute_url($href);
                 $parsed = wp_parse_url($abs);
-
+                
                 $path = $parsed['path'] ?? '/';
                 $query = isset($parsed['query']) ? '?' . $parsed['query'] : '';
                 $frag  = isset($parsed['fragment']) ? '#' . $parsed['fragment'] : '';
-
+                
                 // Root or homepage
                 if ($path === '/' || $path === '') {
                     $new_href = $depth_prefix . 'index.html';
@@ -429,98 +442,98 @@ class STCW_Generator {
                     }
                     $new_href = $depth_prefix . $relative . 'index.html';
                 }
-
+                
                 return '<a' . $m[1] . 'href="' . $new_href . $query . $frag . '"';
             },
             $html
         );
     }
-
-	/**
- * Process HTML for static output
- *
- * Durable: remove ONLY known WordPress core tags.
- * Protect all SEO plugin tags with allowlist.
- */
-private function process_static_html($html) {
-
-	    $timestamp = current_time('Y-m-d H:i:s');
-	    $comment = "\n<!-- Static version generated: $timestamp -->\n";
-
-	   // ALLOWLIST for SEO/meta tags (never remove)
-	    $allowlist_patterns = [
-	        'rel=["\']canonical["\']',
-	        'property=["\']og:',
-	        'name=["\']twitter:',
-	        'name=["\']description["\']',
-	        'name=["\']robots["\']',
-	        'rel=["\']alternate["\']\s+hreflang=',
-	        'itemprop=',
-	        'application/ld\+json',
-	        'rel=["\']prev["\']',
-	        'rel=["\']next["\']',
-	    ];
-
-	    // Patterns for known WordPress CORE tags only
-	    $remove_patterns = [
-	        // WP REST API links
-		'#<link[^>]+rel=["\']https://api\.w\.org/["\'][^>]*>#i',
-
-		// WordPress RSS & Atom feed discovery links
-		'#<link[^>]+rel=["\']alternate["\'][^>]+type=["\']application/(rss\+xml|atom\+xml)["\'][^>]*>#i',
-
-	        // EditURI (RSD)
-	        '#<link[^>]+rel=["\']EditURI["\'][^>]*>#i',
-
-	        // Windows Live Writer manifest
-	        '#<link[^>]+rel=["\']wlwmanifest["\'][^>]*>#i',
-
-	        // Shortlink
-	        '#<link[^>]+rel=["\']shortlink["\'][^>]*>#i',
-
-	        // WordPress generator
-	        '#<meta[^>]+name=["\']generator["\'][^>]*>#i',
-
-	        // oEmbed discovery
-	        '#<link[^>]+type=["\']application/json\+oembed["\'][^>]*>#i',
-	        '#<link[^>]+type=["\']text/xml\+oembed["\'][^>]*>#i',
-
-	        // Emoji scripts
-	        '#<script[^>]*>.*?wp-emoji-release\.min\.js.*?</script>#is',
-
-	        // wp-embed.js
-	        '#<script[^>]+src=["\'][^"\']*wp-embed\.min\.js["\'][^>]*></script>#i',
-	    ];
-
-	    /**
-	     * Apply removal patterns carefully
-	     * Skip anything that matches the allowlist.
-	     */
-	    foreach ($remove_patterns as $pattern) {
-	        $html = preg_replace_callback($pattern, function($m) use ($allowlist_patterns) {
-	            $tag = $m[0];
-
-	            // If tag matches allowlist → KEEP IT
-	            foreach ($allowlist_patterns as $allow) {
-	                if (preg_match('#' . $allow . '#i', $tag)) {
-	                    return $tag;
-	                }
-	            }
-
-	            // Otherwise remove
-	            return '';
-	        }, $html);
-	    }
-
-	    //Add generator comment
-	    if (stripos($html, '</body>') !== false) {
-	        $html = str_ireplace('</body>', $comment . '</body>', $html);
-	    } else {
-	        $html .= $comment;
-	    }
-
-	    return $html;
-	}
-
+    
+    /**
+     * Process HTML for static output
+     *
+     * Removes WordPress core meta tags while preserving SEO plugin tags.
+     * Uses allowlist approach to protect important SEO metadata.
+     *
+     * @param string $html HTML content
+     * @return string Processed HTML
+     */
+    private function process_static_html($html) {
+        $timestamp = current_time('Y-m-d H:i:s');
+        $comment = "\n<!-- Static version generated: $timestamp -->\n";
+        
+        // ALLOWLIST for SEO/meta tags (never remove)
+        $allowlist_patterns = [
+            'rel=["\']canonical["\']',
+            'property=["\']og:',
+            'name=["\']twitter:',
+            'name=["\']description["\']',
+            'name=["\']robots["\']',
+            'rel=["\']alternate["\']\s+hreflang=',
+            'itemprop=',
+            'application/ld\+json',
+            'rel=["\']prev["\']',
+            'rel=["\']next["\']',
+        ];
+        
+        // Patterns for known WordPress CORE tags only
+        $remove_patterns = [
+            // WP REST API links
+            '#<link[^>]+rel=["\']https://api\.w\.org/["\'][^>]*>#i',
+            
+            // WordPress RSS & Atom feed discovery links
+            '#<link[^>]+rel=["\']alternate["\'][^>]+type=["\']application/(rss\+xml|atom\+xml)["\'][^>]*>#i',
+            
+            // EditURI (RSD)
+            '#<link[^>]+rel=["\']EditURI["\'][^>]*>#i',
+            
+            // Windows Live Writer manifest
+            '#<link[^>]+rel=["\']wlwmanifest["\'][^>]*>#i',
+            
+            // Shortlink
+            '#<link[^>]+rel=["\']shortlink["\'][^>]*>#i',
+            
+            // WordPress generator
+            '#<meta[^>]+name=["\']generator["\'][^>]*>#i',
+            
+            // oEmbed discovery
+            '#<link[^>]+type=["\']application/json\+oembed["\'][^>]*>#i',
+            '#<link[^>]+type=["\']text/xml\+oembed["\'][^>]*>#i',
+            
+            // Emoji scripts
+            '#<script[^>]*>.*?wp-emoji-release\.min\.js.*?</script>#is',
+            
+            // wp-embed.js
+            '#<script[^>]+src=["\'][^"\']*wp-embed\.min\.js["\'][^>]*></script>#i',
+        ];
+        
+        /**
+         * Apply removal patterns carefully
+         * Skip anything that matches the allowlist.
+         */
+        foreach ($remove_patterns as $pattern) {
+            $html = preg_replace_callback($pattern, function($m) use ($allowlist_patterns) {
+                $tag = $m[0];
+                
+                // If tag matches allowlist → KEEP IT
+                foreach ($allowlist_patterns as $allow) {
+                    if (preg_match('#' . $allow . '#i', $tag)) {
+                        return $tag;
+                    }
+                }
+                
+                // Otherwise remove
+                return '';
+            }, $html);
+        }
+        
+        // Add generator comment
+        if (stripos($html, '</body>') !== false) {
+            $html = str_ireplace('</body>', $comment . '</body>', $html);
+        } else {
+            $html .= $comment;
+        }
+        
+        return $html;
+    }
 }
-

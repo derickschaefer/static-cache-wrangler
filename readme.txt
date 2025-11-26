@@ -66,7 +66,7 @@ Unlike traditional static‑site plugins that require full crawls or database sc
 
 ### Key Features
 
-**What's New in 2.0.6:**
+**What's New in 2.0.7:**
 
 = 2.0.7 =
 
@@ -92,6 +92,8 @@ This update improves the accuracy of static exports by capturing **all front-end
 * Improved compatibility with theme and plugin lifecycle order by isolating script capture from template rendering.
 * Enhanced support for plugins that insert block assets conditionally based on block presence.
 * Increased reliability of static exports for mixed-content layouts and advanced interactive block patterns.
+
+---
 
 **What's New in 2.0.6:**
 
