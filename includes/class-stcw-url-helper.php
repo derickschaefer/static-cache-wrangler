@@ -168,32 +168,39 @@ class STCW_URL_Helper {
         
         return $url;
     }
-    
+
     /**
-     * Get static file path for current request
-     *
-     * @param string $extension File extension (default: 'html')
-     * @return string Full path to static file
-     */
+    * Get static file path for current request
+    *
+    * @param string $extension File extension (default: 'html')
+    * @return string Full path to static file
+    */
     public function get_static_file_path($extension = 'html') {
-        // Safely get and sanitize REQUEST_URI inline
-        $request_uri = isset($_SERVER['REQUEST_URI']) 
-            ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) 
-            : '/';
-        
-        $parsed_url = wp_parse_url($request_uri);
-        $path = rtrim($parsed_url['path'] ?? '', '/');
-        
-        // Remove any potentially dangerous characters
-        $path = preg_replace('/[^a-zA-Z0-9\/\-_]/', '', $path);
-        
-        // Root or homepage
-        if ($path === '' || $path === '/') {
-            return STCW_STATIC_DIR . 'index.' . $extension;
-        }
-        
-        // Create directory structure matching URL path
-        $dir = STCW_STATIC_DIR . ltrim($path, '/');
-        return $dir . '/index.' . $extension;
+    	// Safely get and sanitize REQUEST_URI inline
+    	$request_uri = isset($_SERVER['REQUEST_URI'])
+    	    ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI']))
+    	    : '/';
+
+    	$parsed_url = wp_parse_url($request_uri);
+    	$path = rtrim($parsed_url['path'] ?? '', '/');
+
+    	// Remove any potentially dangerous characters
+    	$path = preg_replace('/[^a-zA-Z0-9\/\-_\.]/', '', $path);
+
+    	// Root or homepage
+    	if ($path === '' || $path === '/') {
+    	    return STCW_STATIC_DIR . 'index.' . $extension;
+    	}
+
+	// Check if path already has a file extension (like sitemap.xml, robots.txt, etc.)
+	if (preg_match('/\.(xml|txt|json|xsl|rss|atom|rdf)$/i', $path, $matches)) {
+	    // This is already a file with extension - save it directly
+	    return STCW_STATIC_DIR . ltrim($path, '/');
+	}
+
+	// Regular page - create directory structure matching URL path
+	$dir = STCW_STATIC_DIR . ltrim($path, '/');
+	return $dir . '/index.' . $extension;
     }
+
 }
