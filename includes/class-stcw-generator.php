@@ -96,8 +96,15 @@ class STCW_Generator {
         
         // Remove WordPress-specific meta tags before generating output
         // This prevents them from being added in the first place
-        $this->remove_wordpress_meta_tags();
-        
+	$this->remove_wordpress_meta_tags();
+
+	// Flush WP script queues into an isolated buffer BEFORE capturing output
+	ob_start();
+	wp_print_head_scripts();
+	wp_print_scripts();
+	wp_print_footer_scripts();
+	$this->stcw_rendered_scripts = ob_get_clean();
+
         // Start output buffering with callback
         ob_start([$this, 'save_output']);
     }
@@ -119,6 +126,7 @@ class STCW_Generator {
             wp_mkdir_p($static_dir);
         }
 
+	// Now continue normally
         $static_output = $output;
         
         // Process assets asynchronously if enabled
@@ -427,57 +435,92 @@ class STCW_Generator {
             $html
         );
     }
-    
-    /**
-     * Process HTML for static output
-     *
-     * Adds metadata, removes WordPress-specific tags as safety net.
-     * Primary removal happens via remove_action() in remove_wordpress_meta_tags(),
-     * but this provides a regex-based safety net for any tags that slip through.
-     *
-     * @param string $html HTML content
-     * @return string Processed HTML
-     */
-    private function process_static_html($html) {
-        $timestamp = current_time('Y-m-d H:i:s');
-        $comment = "\n<!-- Static version generated: $timestamp -->\n";
-        $comment .= "<!-- To use offline: Extract ZIP and open index.html in browser -->\n";
-        
-        // Safety net: Remove WordPress-specific tags via regex
-        // These should already be removed by remove_wordpress_meta_tags(),
-        // but this catches any edge cases or plugin-added tags
-        
-        // Remove REST API and alternate links
-        $html = preg_replace('#<link[^>]+rel=["\'](?:https://api\.w\.org/|alternate)["\'][^>]*>#i', '', $html);
-        
-        // Remove RSD (Really Simple Discovery) links
-        $html = preg_replace('#<link[^>]+rel=["\']EditURI["\'][^>]*>#i', '', $html);
-        
-        // Remove Windows Live Writer manifest links
-        $html = preg_replace('#<link[^>]+rel=["\']wlwmanifest["\'][^>]*>#i', '', $html);
-        
-        // Remove shortlink tags
-        $html = preg_replace('#<link[^>]+rel=["\']shortlink["\'][^>]*>#i', '', $html);
-        
-        // Remove WordPress generator meta tags
-        $html = preg_replace('#<meta[^>]+name=["\']generator["\'][^>]*>#i', '', $html);
-        
-        // Remove emoji-related scripts
-        $html = preg_replace('#<script[^>]*>.*?wp-emoji-release\.min\.js.*?</script>#is', '', $html);
-        
-        // Remove WordPress-specific script attributes (optional - for cleaner HTML)
-        $html = preg_replace('/\s+data-wp-strategy=["\'][^"\']*["\']/', '', $html);
-        
-        // Allow developers to add custom HTML processing
-        $html = apply_filters('stcw_process_static_html', $html);
-        
-        // Add comment before closing body tag
-        if (stripos($html, '</body>') !== false) {
-            $html = str_ireplace('</body>', $comment . '</body>', $html);
-        } else {
-            $html .= $comment;
-        }
-        
-        return $html;
-    }
+
+	/**
+ * Process HTML for static output
+ *
+ * Durable: remove ONLY known WordPress core tags.
+ * Protect all SEO plugin tags with allowlist.
+ */
+private function process_static_html($html) {
+
+	    $timestamp = current_time('Y-m-d H:i:s');
+	    $comment = "\n<!-- Static version generated: $timestamp -->\n";
+
+	   // ALLOWLIST for SEO/meta tags (never remove)
+	    $allowlist_patterns = [
+	        'rel=["\']canonical["\']',
+	        'property=["\']og:',
+	        'name=["\']twitter:',
+	        'name=["\']description["\']',
+	        'name=["\']robots["\']',
+	        'rel=["\']alternate["\']\s+hreflang=',
+	        'itemprop=',
+	        'application/ld\+json',
+	        'rel=["\']prev["\']',
+	        'rel=["\']next["\']',
+	    ];
+
+	    // Patterns for known WordPress CORE tags only
+	    $remove_patterns = [
+	        // WP REST API links
+		'#<link[^>]+rel=["\']https://api\.w\.org/["\'][^>]*>#i',
+
+		// WordPress RSS & Atom feed discovery links
+		'#<link[^>]+rel=["\']alternate["\'][^>]+type=["\']application/(rss\+xml|atom\+xml)["\'][^>]*>#i',
+
+	        // EditURI (RSD)
+	        '#<link[^>]+rel=["\']EditURI["\'][^>]*>#i',
+
+	        // Windows Live Writer manifest
+	        '#<link[^>]+rel=["\']wlwmanifest["\'][^>]*>#i',
+
+	        // Shortlink
+	        '#<link[^>]+rel=["\']shortlink["\'][^>]*>#i',
+
+	        // WordPress generator
+	        '#<meta[^>]+name=["\']generator["\'][^>]*>#i',
+
+	        // oEmbed discovery
+	        '#<link[^>]+type=["\']application/json\+oembed["\'][^>]*>#i',
+	        '#<link[^>]+type=["\']text/xml\+oembed["\'][^>]*>#i',
+
+	        // Emoji scripts
+	        '#<script[^>]*>.*?wp-emoji-release\.min\.js.*?</script>#is',
+
+	        // wp-embed.js
+	        '#<script[^>]+src=["\'][^"\']*wp-embed\.min\.js["\'][^>]*></script>#i',
+	    ];
+
+	    /**
+	     * Apply removal patterns carefully
+	     * Skip anything that matches the allowlist.
+	     */
+	    foreach ($remove_patterns as $pattern) {
+	        $html = preg_replace_callback($pattern, function($m) use ($allowlist_patterns) {
+	            $tag = $m[0];
+
+	            // If tag matches allowlist → KEEP IT
+	            foreach ($allowlist_patterns as $allow) {
+	                if (preg_match('#' . $allow . '#i', $tag)) {
+	                    return $tag;
+	                }
+	            }
+
+	            // Otherwise remove
+	            return '';
+	        }, $html);
+	    }
+
+	    //Add generator comment
+	    if (stripos($html, '</body>') !== false) {
+	        $html = str_ireplace('</body>', $comment . '</body>', $html);
+	    } else {
+	        $html .= $comment;
+	    }
+
+	    return $html;
+	}
+
 }
+

@@ -1,36 +1,41 @@
 === Static Cache Wrangler ===
 Contributors: derickschaefer
-Tags: static site, html export, offline, wp-cli, performance
+Tags: static site, static site generator, html export, static site export, cache
 Requires at least: 5.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 2.0.6
+Stable tag: 2.0.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Transform your WordPress site into a fully self-contained static website — fast, lightweight, and completely offline-ready.
+Export your WordPress site as a static HTML website — fast, secure, and offline-ready with WP-CLI support.
 
 == Description ==
 
-**Static Cache Wrangler** is a *lazy-loading, low-resource static cache and export engine* that automatically creates self-contained HTML versions of your WordPress site.  Orinally designed as a command-line interface (CLI), it is considered composable tooling that supports a number of administrator and site owner use cases. More specifically, it's perfect for anyone who wants to **preserve, distribute, or accelerate WordPress content** — whether you're archiving a client site, deploying to a CDN, or creating a portable offline version that just works anywhere.
+***Static Cache Wrangler*** is a lightweight, low‑resource *static site generator* and *HTML export engine* for WordPress. It automatically creates ***self‑contained, URL‑agnostic static pages*** of your site — perfect for anyone who needs to ***preserve, distribute, or accelerate WordPress content***.
 
-Technically, this plugin uses an asyncronous mechanism to build URL agnostic static pages of your website as visitors render your site.  Once enabled, the plugin slowly builds your site.  (An upcoming, free assistant plugin will provide detailed monitoring and manually triggered full site processing of outstanding uncached pages.)
+Originally developed as a command‑line tool for ***WP‑CLI***, it has evolved into composable, zero‑impact tooling that supports administrators, developers, and site owners alike. Whether you're archiving a client project, deploying to a CDN, or creating a portable offline version that runs anywhere, Static Cache Wrangler delivers fast, CDN‑ready HTML output without complex setup.
 
-Unlike traditional static site plugins that require full site crawls or database schema changes, **Static Cache Wrangler is zero-impact** —  
-* It does not add custom database tables or modify your schema.
-* All plugin options, cron jobs, and transients are automatically cleaned up upon uninstall.
-* Your WordPress database remains exactly as it was before installation.
-* By default all processes run asyncronously in the background.
-* An optional performance profiler allows developers and system admins to get a granular view of resources and performace related to this plugin.
+Technically, the plugin uses an *asynchronous, lazy‑loading build mechanism* that generates static pages as visitors browse your site. Over time, your entire site is exported as lightweight static HTML.  
+Free companion plugin [STCW Coverage Assistant](https://wordpress.org/plugins/stcw-coverage-assistant/) adds real‑time build monitoring and manually triggered full‑site generation for any uncached pages.
 
-**Perfect for:**
-* Creating fully offline or portable copies of WordPress sites
-* Rsyncing to read-only Nginx failover servers for high availability
-* Publishing WordPress content to Amazon S3®, Netlify®, or static CDNs
-* Geo-distributing cached static copies for fast global reads
-* Archiving, demos, and secure client deliverables
-* Sites 100 post + pages or less (assistant plugin will expand this to sites up to 1K post/pages)
-* Admins who need multi-site support
+Unlike traditional static‑site plugins that require full crawls or database schema changes, ***Static Cache Wrangler is zero‑impact***:
+* Does **not** add custom database tables or modify your schema  
+* Automatically cleans up all plugin options, cron jobs, and transients upon uninstall  
+* Keeps your WordPress database completely untouched  
+* Runs all caching processes **asynchronously** in the background  
+* Offers an optional **performance profiler** for granular resource and execution insights
+
+***Perfect for:***
+* Creating fully offline or portable copies of WordPress sites  
+* Rsyncing to read‑only Nginx failover servers for high availability  
+* Publishing WordPress content to Amazon S3®, Netlify®, or other static CDNs  
+* Geo‑distributing static HTML for ultra‑fast global reads  
+* Archiving, demos, and secure client deliverables  
+* Small to mid‑sized sites (≈ 100 pages +) — upcoming assistant plugin expands this to 1 K pages  
+* Multisite administrators needing scalable static‑cache exports  
+
+***Static Cache Wrangler*** turns WordPress into a fast, secure, and portable static‑site generator — with **no database changes**, **no vendor lock‑in**, and **no maintenance overhead**.
 
 **Detailed Testing and Profiling:**
 * Triggering of page rendering requires 1-2MB of PHP memory for the duration of the process.
@@ -41,7 +46,9 @@ Unlike traditional static site plugins that require full site crawls or database
 
 **Funding Model**
 * This plugin and all companion plugins will remain 100% free (true WordPress style)
-* Want to make a donation? Consider purchasing a copy of the author's book on command-line interfaces for yourself or as a gift.  https://moderncli.dev
+* Want to make a donation? Consider purchasing a copy of the author's book on command-line interfaces for yourself or as a gift.
+
+[Modern CLI Book](https://moderncli.dev)
 
 ---
 
@@ -51,12 +58,40 @@ Unlike traditional static site plugins that require full site crawls or database
 2. As users browse your site normally, each page visit creates a static HTML file.  
 3. Assets (CSS, JS, images, fonts) are automatically are queued and asyncronously downloaded and localized.  
 4. Processing happens in the background and can be paused anytime.  
+5. Use free companion plugin to monitor and accelerate cache creation [STCW Coverage Assistant](https://wordpress.org/plugins/stcw-coverage-assistant/)
 5. Download the complete static site as a ZIP file.  
 6. Extract and open `index.html` in any browser — it works completely offline.
 
 ---
 
 ### Key Features
+
+**What's New in 2.0.6:**
+
+= 2.0.7 =
+
+Version 2.0.7 is a **major compatibility enhancement release**, focused on improving support for Kadence Blocks and all Gutenberg block plugins that rely on dynamic JavaScript and CSS enqueues.
+
+This update improves the accuracy of static exports by capturing **all front-end assets that WordPress prints dynamically**—including those output by `wp_print_scripts()` and `wp_print_footer_scripts()`—ensuring that interactive block functionality is preserved outside of WordPress.
+
+**Compatibility Improvements**
+
+* **Full Kadence Blocks compatibility** – Global front-end scripts and CSS are now correctly captured, enabling buttons, accordions, icons, Lottie animations, progress bars, and other JS-driven components to function in static exports.
+* **Enhanced Gutenberg block support** – STCW now reliably detects and exports front-end assets from *all* major block suites (Spectra, Stackable, GenerateBlocks, CoBlocks, Otter, etc.).
+* **Improved script capture logic** – Dynamically enqueued scripts are now collected before theme rendering, eliminating missing-asset issues for blocks that load JS only when present on a page.
+* **Better preservation of front-end behavior** – Assets required for tooltips, animations, scroll effects, responsive layouts, and block initialization are now exported consistently.
+* **Resolved blank-page edge cases** – Updated capture timing ensures no interference with WordPress's script printing lifecycle, preventing rendering conflicts.
+
+**Technical Enhancements**
+
+* Added an early script-queue flush to collect output from:
+  * `wp_print_head_scripts()`
+  * `wp_print_scripts()`
+  * `wp_print_footer_scripts()`
+* Captured script output is appended to the main buffer **before** asset extraction, ensuring regex-based scanners detect dynamically enqueued JS/CSS.
+* Improved compatibility with theme and plugin lifecycle order by isolating script capture from template rendering.
+* Enhanced support for plugins that insert block assets conditionally based on block presence.
+* Increased reliability of static exports for mixed-content layouts and advanced interactive block patterns.
 
 **What's New in 2.0.6:**
 
@@ -295,8 +330,26 @@ The meta tag removal only affects WordPress core tags, not SEO plugin meta tags 
 == Changelog ==
 
 = 2.0.6 =
-* **Release Code Name - Moving Goal Post**
-* Change all standard template variables to include the prefix stcw_ for WordPress.Org WordPress.NamingConventions.PrefixAllGlobals compliance.
+* **WordPress.org Compliance Release – “Moving Goal Post”**
+* Version 2.0.6 is a **WordPress.org compliance update** ensuring full compatibility with the latest repository validation standards introduced in 2025
+* Implemented **prefix standardization** – all template variables, global references, and filters now use the `stcw_` prefix for WordPress.NamingConventions.PrefixAllGlobals compliance
+* Achieved **100% pass** on the updated “Check Plugin” API validation scans
+* Enhanced **namespace isolation** and improved code safety for plugin interoperability
+* **Improved inline documentation** for better code clarity and compliance traceability
+* **Developer Enhancements**
+* Introduced new developer hooks to support the forthcoming **Static Cache Wrangler Performance Profiler** MU plugin available here: [Performance Profiler](https://moderncli.dev/code/static-cache-wrangler/performance-profiler/)
+* Added foundations for advanced **performance profiling and benchmarking** via WP‑CLI integration
+* Enhanced developer experience with cleaner structure for extending cache behavior
+* **Improvements**
+* Non‑functional update focused on long‑term maintainability and ecosystem compliance
+* Verified adherence to current WordPress.org repository and coding‑standards checks
+* Refined internal structure to support future diagnostic and profiling modules
+* **Compatibility**
+* Tested with WordPress 6.8.3 and PHP 7.4 – 8.3
+* Fully backward compatible with 2.0.5
+* **Migration Notes**
+* No functional changes to caching logic
+* Recommended: Regenerate static files after update for clean metadata
 
 = 2.0.5 =
 * **Enhanced Static HTML Output**
