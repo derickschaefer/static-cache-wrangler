@@ -40,6 +40,11 @@ class STCW_Generator {
      * Uses WordPress's native remove_action() for clean, performant removal.
      */
     private function remove_wordpress_meta_tags() {
+
+	// Remove emoji detection script and styles
+	remove_action('wp_head', 'print_emoji_detection_script', 7);
+	remove_action('wp_print_styles', 'print_emoji_styles');
+
         // Remove RSD (Really Simple Discovery) link for XML-RPC
         remove_action('wp_head', 'rsd_link');
         
@@ -237,12 +242,12 @@ class STCW_Generator {
         
         return array_unique($filtered);
     }
-    
-    /**
+
+   /**
      * Rewrite asset paths to relative local paths
      *
      * Changes absolute URLs to relative paths pointing to assets directory.
-     * Includes rewriting of inline <style> blocks.
+     * Includes rewriting of inline <style> blocks AND inline style attributes.
      *
      * @param string $html HTML content
      * @return string HTML with rewritten asset paths
@@ -250,7 +255,7 @@ class STCW_Generator {
     private function rewrite_asset_paths($html) {
         $depth = $this->url_helper->get_current_depth();
         $assets_path = str_repeat('../', $depth) . 'assets/';
-        
+
         // Rewrite <link> tags (CSS and icons)
         $html = preg_replace_callback(
             '#<link([^>]*?)href=["\']([^"\']+)["\']([^>]*)>#i',
@@ -263,7 +268,7 @@ class STCW_Generator {
                 $is_css = preg_match('/\.css(\?|$)/i', $href);
                 $is_icon = preg_match('/\.(?:ico|png|svg|gif|jpg|jpeg|webp|avif)(\?|$)/i', $href)
                             || strpos($rel, 'icon') !== false;
-                
+
                 if (($is_css || $is_icon) && $this->url_helper->is_same_host($href)) {
                     $filename = $this->url_helper->filename_from_url($href);
                     return '<link' . $m[1] . 'href="' . $assets_path . esc_attr($filename) . '"' . $m[3] . '>';
@@ -272,7 +277,7 @@ class STCW_Generator {
             },
             $html
         );
-        
+
         // Rewrite <script> tags
         $html = preg_replace_callback(
             '#<script([^>]*?)src=["\']([^"\']+\.js[^"\']*)["\']([^>]*)></script>#i',
@@ -286,7 +291,7 @@ class STCW_Generator {
             },
             $html
         );
-        
+
         // Rewrite <img> tags (including srcset)
         $html = preg_replace_callback(
             '#<img([^>]*?)src=["\']([^"\']+)["\']([^>]*)>#i',
@@ -295,7 +300,7 @@ class STCW_Generator {
                 if ($this->url_helper->is_same_host($src)) {
                     $filename = $this->url_helper->filename_from_url($src);
                     $new = '<img' . $m[1] . 'src="' . $assets_path . esc_attr($filename) . '"' . $m[3] . '>';
-                    
+
                     // Handle srcset attribute
                     if (preg_match('/\ssrcset=["\']([^"\']+)["\']/i', $m[0], $sm)) {
                         $srcset = $sm[1];
@@ -319,7 +324,7 @@ class STCW_Generator {
             },
             $html
         );
-        
+
         // Rewrite video/source tags
         $html = preg_replace_callback(
             '#<(source|video)([^>]*?)(src|poster)=["\']([^"\']+)["\']([^>]*)>#i',
@@ -333,7 +338,7 @@ class STCW_Generator {
             },
             $html
         );
-        
+
         // Rewrite meta tags (og:image, twitter:image)
         $html = preg_replace_callback(
             '#<meta([^>]+)(property|name)=[\'"](og:image|twitter:image)[\'"]([^>]+)content=[\'"]([^\'"]+)[\'"]([^>]*)>#i',
@@ -347,7 +352,7 @@ class STCW_Generator {
             },
             $html
         );
-        
+
         // Rewrite inline <style> blocks for background-image urls
         // This handles dynamically generated CSS from themes/plugins
         $html = preg_replace_callback(
@@ -355,37 +360,70 @@ class STCW_Generator {
             function($m) use ($assets_path) {
                 $style_attrs = $m[1];
                 $css_content = $m[2];
-                
+
                 // Rewrite url() references in CSS content
                 $css_content = preg_replace_callback(
                     '#url\s*\(\s*["\']?([^"\')]+)["\']?\s*\)#i',
                     function($url_match) use ($assets_path) {
                         $url = trim($url_match[1], " \t\n\r\0\x0B'\"");
-                        
+
                         // Skip data URIs and empty URLs
                         if (empty($url) || stripos($url, 'data:') === 0) {
                             return $url_match[0];
                         }
-                        
+
                         // Convert to absolute URL for checking
                         $abs_url = $this->url_helper->absolute_url($url);
-                        
+
                         // Only rewrite same-host URLs
                         if ($this->url_helper->is_same_host($abs_url)) {
                             $filename = $this->url_helper->filename_from_url($abs_url);
                             return 'url(' . $assets_path . $filename . ')';
                         }
-                        
+
                         return $url_match[0];
                     },
                     $css_content
                 );
-                
+
                 return '<style' . $style_attrs . '>' . $css_content . '</style>';
             },
             $html
         );
-        
+
+        // This catches parallax sections and similar inline styles
+        $html = preg_replace_callback(
+            '#style=(["\'])([^"\']*?)(background(?:-image)?:\s*url\()([^)]+)(\))([^"\']*?)\1#i',
+            function($m) use ($assets_path) {
+                $quote = $m[1];
+                $before_css = $m[2];
+                $bg_property = $m[3];
+                $url = $m[4];
+                $closing_paren = $m[5];
+                $after_css = $m[6];
+
+                // Clean the URL (remove quotes if present)
+                $url = trim($url, " \t\n\r\0\x0B'\"");
+
+                // Skip data URIs
+                if (stripos($url, 'data:') === 0) {
+                    return $m[0];
+                }
+
+                // Convert to absolute URL for checking
+                $abs_url = $this->url_helper->absolute_url($url);
+
+                // Only rewrite same-host URLs
+                if ($this->url_helper->is_same_host($abs_url)) {
+                    $filename = $this->url_helper->filename_from_url($abs_url);
+                    return 'style=' . $quote . $before_css . $bg_property . $assets_path . esc_attr($filename) . $closing_paren . $after_css . $quote;
+                }
+
+                return $m[0];
+            },
+            $html
+        );
+
         return $html;
     }
     
@@ -450,9 +488,24 @@ class STCW_Generator {
      * @param string $html HTML content
      * @return string Processed HTML
      */
+
     private function process_static_html($html) {
         $timestamp = current_time('Y-m-d H:i:s');
-        $comment = "\n<!-- Static version generated: $timestamp -->\n";
+	$comment = "\n<!-- Static version generated: $timestamp -->\n";
+
+	// The comment form is wrapped in <div id="respond"> or <form id="commentform">
+    	$html = preg_replace(
+        	'#<div[^>]+id=["\']respond["\'][^>]*>.*?</div>[\s]*<!--\s*#respond\s*-->#is',
+        	'<!-- Comment form removed from static version -->',
+        	$html
+    	);
+
+    	// Fallback: Remove comment form by form ID if the div#respond pattern didn't catch it
+    	$html = preg_replace(
+    	    '#<form[^>]+id=["\']commentform["\'][^>]*>.*?</form>#is',
+    	    '<!-- Comment form removed from static version -->',
+    	    $html
+    	);
         
         // ALLOWLIST for SEO/meta tags (never remove)
         $allowlist_patterns = [
