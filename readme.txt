@@ -35,6 +35,8 @@ Unlike traditional static‑site plugins that require full crawls or database sc
 * Small to mid‑sized sites (≈ 100 pages +) — upcoming assistant plugin expands this to 1 K pages  
 * Multisite administrators needing scalable static‑cache exports  
 
+A demo site created using this plugin can be found at [Cache Wrangler Demo Site](https://cachewrangler.com/)
+
 ***Static Cache Wrangler*** turns WordPress into a fast, secure, and portable static‑site generator — with **no database changes**, **no vendor lock‑in**, and **no maintenance overhead**.
 
 **Detailed Testing and Profiling:**

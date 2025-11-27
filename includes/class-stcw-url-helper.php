@@ -192,10 +192,9 @@ class STCW_URL_Helper {
     	    return STCW_STATIC_DIR . 'index.' . $extension;
     	}
 
-	// Check if path already has a file extension (like sitemap.xml, robots.txt, etc.)
-	if (preg_match('/\.(xml|txt|json|xsl|rss|atom|rdf)$/i', $path, $matches)) {
-	    // This is already a file with extension - save it directly
-	    return STCW_STATIC_DIR . ltrim($path, '/');
+	if (preg_match('/\.(xml|txt|json|xsl|rss|atom|rdf|ico|svg|webmanifest)$/i', $path, $matches)) {
+            // This is already a file with extension - save it directly
+            return STCW_STATIC_DIR . ltrim($path, '/');
 	}
 
 	// Regular page - create directory structure matching URL path

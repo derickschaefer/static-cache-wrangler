@@ -26,12 +26,6 @@ class STCW_Generator {
     private $url_helper;
     
     /**
-     * Rendered scripts buffer
-     * @var string
-     */
-//    private $stcw_rendered_scripts = '';
-    
-    /**
      * Constructor - initialize dependencies
      */
     public function __construct() {
@@ -108,67 +102,71 @@ class STCW_Generator {
         ob_start([$this, 'save_output']);
     }
 
-   /**
- * Save output buffer to static file
- *
- * Callback for ob_start() - processes and saves HTML
- *
- * @param string $output HTML output from WordPress
- * @return string Original output (unchanged for display)
- */
-public function save_output($output) {
-    $static_file = $this->url_helper->get_static_file_path();
-    $static_dir = dirname($static_file);
+    /**
+     * Save output buffer to static file
+     *
+     * Callback for ob_start() - processes and saves HTML.
+     * 
+     * CRITICAL: This method captures dynamically loaded scripts from Kadence Blocks
+     * and other plugins that use conditional script loading.
+     *
+     * @param string $output HTML output from WordPress
+     * @return string Original output (unchanged for display)
+     */
+    public function save_output($output) {
+        $static_file = $this->url_helper->get_static_file_path();
+        $static_dir = dirname($static_file);
 
-    // Create directory if it doesn't exist
-    if (!is_dir($static_dir)) {
-        wp_mkdir_p($static_dir);
+        // Create directory if it doesn't exist
+        if (!is_dir($static_dir)) {
+            wp_mkdir_p($static_dir);
+        }
+
+        // Work with the complete output (now including late-loaded scripts)
+        $static_output = $output;
+
+        // Extract assets FIRST - before any rewriting
+        // Now this will find the Kadence scripts we just added
+        $assets = $this->extract_asset_urls($output);
+
+        // Process assets asynchronously if enabled
+        if (STCW_ASYNC_ASSETS) {
+            // Rewrite asset paths
+            $static_output = $this->rewrite_asset_paths($static_output);
+            // Queue assets for download
+            $this->asset_handler->queue_asset_downloads($assets);
+        }
+
+        // Rewrite internal links to relative paths
+        $static_output = $this->rewrite_links($static_output);
+
+        // Add metadata and clean up WordPress-specific tags
+        $static_output = $this->process_static_html($static_output);
+
+        // Initialize WP_Filesystem
+        global $wp_filesystem;
+        if (empty($wp_filesystem)) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            WP_Filesystem();
+        }
+
+        // Profiling hook - before file save
+        do_action('stcw_before_file_save', $static_file);
+
+        // Save static file using WP_Filesystem
+        if ($wp_filesystem) {
+            $success = $wp_filesystem->put_contents($static_file, $static_output, FS_CHMOD_FILE);
+        } else {
+            stcw_log_debug('Failed to initialize WP_Filesystem for saving static file');
+            $success = false;
+        }
+
+        // Profiling hook - after file save
+        do_action('stcw_after_file_save', $success, $static_file);
+
+        // Return original output unchanged for browser display
+        return $output;
     }
-
-    // Work with the complete output
-    $static_output = $output;
-
-    // Extract assets FIRST - before any rewriting
-    $assets = $this->extract_asset_urls($output);
-
-    // Process assets asynchronously if enabled
-    if (STCW_ASYNC_ASSETS) {
-        // Rewrite asset paths
-        $static_output = $this->rewrite_asset_paths($static_output);
-        // Queue assets for download
-        $this->asset_handler->queue_asset_downloads($assets);
-    }
-
-    // Rewrite internal links to relative paths
-    $static_output = $this->rewrite_links($static_output);
-
-    // Add metadata and clean up WordPress-specific tags
-    $static_output = $this->process_static_html($static_output);
-
-    // Initialize WP_Filesystem
-    global $wp_filesystem;
-    if (empty($wp_filesystem)) {
-        require_once ABSPATH . 'wp-admin/includes/file.php';
-        WP_Filesystem();
-    }
-
-    // Profiling hook - before file save
-    do_action('stcw_before_file_save', $static_file);
-
-    // Save static file using WP_Filesystem
-    if ($wp_filesystem) {
-        $success = $wp_filesystem->put_contents($static_file, $static_output, FS_CHMOD_FILE);
-    } else {
-        stcw_log_debug('Failed to initialize WP_Filesystem for saving static file');
-        $success = false;
-    }
-
-    // Profiling hook - after file save
-    do_action('stcw_after_file_save', $success, $static_file);
-
-    // Return original output unchanged for browser display
-    return $output;
-}
     
     /**
      * Extract asset URLs from HTML
