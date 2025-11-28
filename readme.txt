@@ -35,7 +35,7 @@ Unlike traditional static‑site plugins that require full crawls or database sc
 * Small to mid‑sized sites (≈ 100 pages +) — upcoming assistant plugin expands this to 1 K pages  
 * Multisite administrators needing scalable static‑cache exports  
 
-A demo site created using this plugin can be found at [Cache Wrangler Demo Site](https://cachewrangler.com/)
+A demo site created using this plugin can be found at [Cache Wrangler Demo Site](https://static.cachewrangler.com/) which is a static version of this [WordPress site](https://cacherangler.com/)
 
 ***Static Cache Wrangler*** turns WordPress into a fast, secure, and portable static‑site generator — with **no database changes**, **no vendor lock‑in**, and **no maintenance overhead**.
 
@@ -332,6 +332,36 @@ The meta tag removal only affects WordPress core tags, not SEO plugin meta tags 
 ---
 
 == Changelog ==
+
+### = 2.0.7 =
+* **Major Compatibility Enhancement Release**
+* Version 2.0.7 delivers extensive improvements to **Kadence Blocks support** and significantly enhances compatibility with **all Gutenberg block plugins** that rely on dynamically printed JavaScript and CSS.
+* Ensures **accurate static exports** by capturing all front-end assets output by WordPress during rendering—including assets printed via `wp_print_scripts()` and `wp_print_footer_scripts()`—preserving full block interactivity outside of WordPress.
+
+**Compatibility Improvements**
+* **Full Kadence Blocks compatibility** – Global front-end scripts and styles are now correctly captured, enabling complete functionality for JS-dependent components (accordions, buttons, icons, Lottie animations, progress bars, etc.).
+* **Enhanced Gutenberg block suite support** – Reliable detection and export of dynamic assets from Spectra, Stackable, GenerateBlocks, CoBlocks, Otter, and other major block libraries.
+* **Improved dynamic script capture logic** – Scripts enqueued conditionally based on block presence are now collected earlier, preventing missing-asset issues.
+* **Better preservation of interactive behavior** – Tooltips, animations, scroll effects, responsive scripting, and block initialization logic now export more consistently.
+* **Resolved rare blank-page rendering issues** caused by timing conflicts in WordPress’s script-printing lifecycle.
+
+**Technical Enhancements**
+* Implemented an early script-queue flush to capture output from:
+  * `wp_print_head_scripts()`
+  * `wp_print_scripts()`
+  * `wp_print_footer_scripts()`
+* Captured script output is now injected into the main buffer **before** asset parsing, ensuring regex scanners detect all JS/CSS printed during rendering.
+* Improved isolation of script-capture routines from theme templates to avoid lifecycle interference.
+* Better support for plugins that enqueue front-end assets only when specific blocks are present.
+* Increased reliability for mixed-content layouts and advanced interactive block patterns.
+
+**Compatibility**
+* Tested with WordPress 6.8.3 and PHP 7.4–8.3
+* Fully backward compatible with 2.0.6
+
+**Migration Notes**
+* No configuration changes required.
+* Recommended: Regenerate static exports after update to ensure full compatibility with updated asset-capture behavior.
 
 = 2.0.6 =
 * **WordPress.org Compliance Release – “Moving Goal Post”**
