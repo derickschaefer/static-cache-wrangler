@@ -157,7 +157,7 @@ class STCW_Sitemap_Generator {
                 }
                 
                 // Get file modification time
-                $lastmod = date('Y-m-d\TH:i:s+00:00', $file->getMTime());
+                $lastmod = gmdate('Y-m-d\TH:i:s+00:00', $file->getMTime());
                 
                 // Calculate priority (homepage = 1.0, others based on depth)
                 $depth = substr_count($relative_path, '/');
@@ -293,8 +293,10 @@ class STCW_Sitemap_Generator {
             $wp_filesystem = new WP_Filesystem_Direct(null);
         }
         
-        // Define FS_CHMOD_FILE if not already defined (WP-CLI context)
+        // Define FS_CHMOD_FILE if not already defined by WordPress core
+        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- WordPress core constant
         if (!defined('FS_CHMOD_FILE')) {
+            // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- WordPress core constant
             define('FS_CHMOD_FILE', 0644);
         }
         
@@ -456,8 +458,10 @@ class STCW_Sitemap_Generator {
             $wp_filesystem = new WP_Filesystem_Direct(null);
         }
         
-        // Define FS_CHMOD_FILE if not already defined (WP-CLI context)
+        // Define FS_CHMOD_FILE if not already defined by WordPress core
+        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- WordPress core constant
         if (!defined('FS_CHMOD_FILE')) {
+            // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- WordPress core constant
             define('FS_CHMOD_FILE', 0644);
         }
         

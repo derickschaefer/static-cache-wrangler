@@ -4,7 +4,7 @@ Tags: static site, static site generator, html export, static site export, cache
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 2.0.7
+Stable tag: 2.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -167,94 +167,6 @@ This update improves the accuracy of static exports by capturing **all front-end
 
 ---
 
-**What's New in 2.0.6:**
-
-= 2.0.6 =
-
-Version 2.0.6 is a **WordPress.org compliance release**.  
-This update ensures full compatibility with the latest repository validation standards introduced in 2025, requiring prefixed template variables and enhanced namespace isolation.  
-
-Although originally planned as a non-functional compliance update, we took the opportunity to introduce something valuable for developers — the foundation for advanced **performance profiling**.
-
-**Compliance & Compatibility**
-
-* **Prefix standardization** – All template variables, global references, and filters now use the `stcw_` prefix, satisfying the latest WordPress.org code scanning rules.  
-* **Improved code validation** – Passes 100% of the new “Check Plugin” API scan results.  
-* **Updated inline documentation** – Improved code clarity and compliance annotations.  
-
-**Developer Enhancements**
-
-New developer hooks were introduced to support the forthcoming **Static Cache Wrangler Performance Profiler**, an optional MU plugin for benchmarking and advanced diagnostics via WP-CLI.
-
-The following hooks are now available for use:
-
-* `stcw_before_file_save` — Fires immediately before a static file is written to disk.  
-  - **Parameters:** `$static_file` *(string)* — Path to the file being saved.  
-  - **Use Case:** Start timers, collect memory data, or monitor disk operations before file write.
-
-* `stcw_after_file_save` — Fires after a static file is successfully written.  
-  - **Parameters:** `$success` *(bool)* — True on success.  
-    `$static_file` *(string)* — The saved file path.  
-  - **Use Case:** Log, validate, or post-process generated static files.
-
-* `stcw_before_asset_download` — Allows inspection or modification of asset URLs before download.  
-  - **Parameters:** `$url` *(string)* — The original asset URL.  
-  - **Returns:** Filtered URL string.
-
-* `stcw_after_asset_download` — Executes after each asset download completes.  
-  - **Parameters:** `$dest` *(string)* — Destination path.  
-    `$url` *(string)* — Original URL.  
-  - **Returns:** Filtered destination path (optional).
-
-* `stcw_before_asset_batch` — Fires before an asynchronous asset download batch begins.  
-  - **Use Case:** Initialize timers or resource tracking for async performance measurement.
-
-* `stcw_after_asset_batch` — Fires after each asynchronous asset batch completes.  
-  - **Parameters:** `$processed` *(int)* — Number of assets processed successfully.  
-    `$failed` *(int)* — Number of failed downloads.  
-  - **Use Case:** Record async batch performance, memory usage, or queue diagnostics.
-
-**New Developer Tools Directory**
-
-A new `/tools/` directory has been added to the plugin to organize optional developer resources.  
-It currently includes:
-
-* `performance-profiler.txt` — A detailed guide describing how to install and use the optional **Performance Profiler** MU plugin for advanced benchmarking.
-
-Developers can download the latest version of the profiler from:  
-[https://moderncli.dev/code/static-cache-wrangler/performance-profiler/](https://moderncli.dev/code/static-cache-wrangler/performance-profiler/)
-
-**Summary**
-
-* Compliance with 2025 WordPress.org plugin repository standards.  
-* New developer hooks for performance profiling and async instrumentation.  
-* Added `/tools/performance-profiler.txt` developer documentation.  
-* No behavioral or UI changes for end users.  
-* Zero database impact — profiling features remain opt-in and inactive by default.
-
-**What's New in 2.0.5:**
-
-Version 2.0.5 introduces enhanced static HTML output with comprehensive WordPress meta tag removal. Your generated static files are now 3.1% smaller, generate 2.3% faster, and contain zero WordPress-specific metadata. This makes them truly portable, more secure (no version exposure), and perfect for offline use or deployment to any platform.
-
-Two new developer hooks (`stcw_remove_wp_head_tags` and `stcw_process_static_html`) enable companion plugins and custom integrations, opening up possibilities for agencies, developers, and SaaS providers to extend the plugin without modifying core code.
-
-* **Lazy-load static generation** — creates static pages only when visited, minimizing CPU and memory usage.
-* **Automatic asset localization** — CSS, JS, images, and fonts are downloaded and referenced locally.
-* **Relative path rewriting** — ensures portability for offline or CDN hosting.
-* **Zero-configuration** — works instantly after activation.
-* **Zero database impact** — does not create or modify any database tables.
-* **Clean uninstall** — all options, transients, and cron events are removed automatically.
-* **Background processing** — non-blocking, low-impact generation.
-* **One-click export** — download a ZIP of the entire static site.
-* **Modern UI** — intuitive, card-based dashboard.
-* **WP-CLI Support** — manage generation, status, cleanup, and export directly from the terminal.
-* **Clean HTML Output** - Removes 7+ WordPress meta tags for portable, framework-agnostic static files
-* **Developer Hooks** - Two extensibility hooks for companion plugins and custom integrations
-* **Enhanced Security** - WordPress version and internal metadata hidden from static exports
-* **Optimized Performance** - 3.1% smaller files and 2.3% faster generation than previous versions
-
----
-
 ### WP-CLI Commands
 
 Full control without the dashboard:
@@ -265,6 +177,9 @@ Full control without the dashboard:
 * `wp scw process` – Process all pending assets  
 * `wp scw clear` – Remove all generated static files  
 * `wp scw zip` – Create a ZIP archive of the site  
+* `wp scw sitemap` – Generate sitemap.xml from cached files
+* `wp scw sitemap --target-url=<url>` – Generate sitemap for deployment URL
+* `wp scw sitemap-delete` – Remove sitemap files
 
 ---
 

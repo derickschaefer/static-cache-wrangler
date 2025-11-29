@@ -156,8 +156,10 @@ public function save_output($output) {
         $wp_filesystem = new WP_Filesystem_Direct(null);
     }
 
-    // Define FS_CHMOD_FILE if not already defined
+    // Define FS_CHMOD_FILE if not already defined by WordPress core
+    // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- WordPress core constant
     if (!defined('FS_CHMOD_FILE')) {
+        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- WordPress core constant
         define('FS_CHMOD_FILE', 0644);
     }
 
