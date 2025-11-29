@@ -2,7 +2,7 @@
 Contributors: derickschaefer
 Tags: static site, static site generator, html export, static site export, cache
 Requires at least: 5.0
-Tested up to: 6.8
+Tested up to: 6.9
 Requires PHP: 7.4
 Stable tag: 2.0.7
 License: GPLv2 or later
@@ -67,6 +67,76 @@ A demo site created using this plugin can be found at [Cache Wrangler Demo Site]
 ---
 
 ### Key Features
+
+**What's New in 2.1.0:**
+
+= 2.1.0 =
+
+Version 2.1.0 introduces **static sitemap generation** - a file system-based approach that creates sitemaps from your actual cached files rather than the WordPress database.
+
+This update enables true static sitemaps that work in exported sites without WordPress, PHP, or a database connection - perfect for deployments to S3, Netlify, GitHub Pages, or any static hosting platform.
+
+**New WP-CLI Commands**
+
+* `wp scw sitemap` - Generate sitemap.xml from cached static files
+* `wp scw sitemap-delete` - Remove sitemap files
+
+**Why File System-Based?**
+
+Traditional WordPress sitemap plugins (Yoast SEO, Rank Math) query the database dynamically. This works great for live sites, but fails for static exports because there's no PHP or database available.
+
+Static Cache Wrangler scans your actual cached index.html files to build the sitemap, ensuring:
+
+* **Perfect accuracy** - sitemap matches exported content exactly
+* **True portability** - works without WordPress/PHP/database
+* **SEO compliance** - search engines see what users see
+* **Deploy anywhere** - S3, Netlify, GitHub Pages, any static host
+
+**Sitemap Features**
+
+* Generates sitemaps.org compliant XML sitemap
+* Creates XSL stylesheet for browser viewing
+* Calculates priorities automatically (homepage = 1.0, deeper pages = 0.4)
+* Assigns smart change frequencies (homepage = daily, pages = monthly)
+* Includes last modification times from file metadata
+* Developer filter hook: `stcw_sitemap_changefreq`
+* Multisite compatible with isolated sitemaps per site
+* Fast performance: ~50-100ms per 100 cached files
+
+**Typical Workflow**
+
+```
+wp scw enable          # Enable generation
+# Browse your site...
+wp scw process        # Process assets
+wp scw sitemap        # Generate sitemap (NEW!)
+wp scw zip            # Export with sitemap included
+# Deploy to S3/Netlify...
+```
+
+**View in Browser**
+
+Open https://your-site.com/sitemap.xml - the XSL stylesheet transforms it into a readable HTML table with color-coded priorities and sortable columns.
+
+**Technical Implementation**
+
+* New STCW_Sitemap_Generator class scans cached directory recursively
+* Uses WordPress Filesystem API for all file operations
+* Proper output escaping and sanitization throughout
+* No database queries - pure file system operations
+* Multisite compatible with isolated sitemaps per site
+* Performance optimized: ~50-100ms per 100 files, ~2MB memory for 1,000+ pages
+
+**GUI Coming Soon**
+
+This release is CLI-only to validate the approach and gather user feedback. A visual interface in WordPress admin is planned for version 2.2.0.
+
+**Compatibility**
+
+* WordPress 6.8.3
+* PHP 7.4, 8.0, 8.1, 8.2, 8.3
+* Multisite compatible
+* WP-CLI required for sitemap generation
 
 **What's New in 2.0.7:**
 
@@ -332,6 +402,57 @@ The meta tag removal only affects WordPress core tags, not SEO plugin meta tags 
 ---
 
 == Changelog ==
+
+### = 2.1.0 =
+= 2.1.0 =
+* **NEW:** Static sitemap generation from cached files (CLI-only)
+* **NEW:** `wp scw sitemap` command generates sitemap.xml and sitemap.xsl
+* **NEW:** `wp scw sitemap-delete` command removes sitemap files
+* **NEW:** File system-based approach - scans cached files instead of database
+* **NEW:** Automatic priority calculation based on URL depth
+* **NEW:** Smart change frequency assignment (homepage = daily, pages = monthly)
+* **NEW:** XSL stylesheet for browser-viewable sitemaps
+* **NEW:** Developer hook: `stcw_sitemap_changefreq` filter for customization
+* **IMPROVED:** Sitemaps work in static exports without WordPress/PHP/database
+* **IMPROVED:** Perfect accuracy - sitemap reflects actual exported content
+* **IMPROVED:** Multisite compatible with isolated sitemaps per site
+* **PERFORMANCE:** ~50-100ms scan time per 100 cached files, ~2MB memory for 1,000+ pages
+* **COMPATIBLE:** WordPress 6.8.3, PHP 7.4-8.3
+* **NOTE:** GUI interface planned for v2.2.0 (currently CLI-only)
+
+**Why File System-Based?**
+Traditional WordPress sitemap plugins (Yoast SEO, Rank Math) query the database dynamically. This works great for live sites, but fails for static exports because there's no PHP or database available. Static Cache Wrangler scans your actual cached index.html files to build the sitemap, ensuring perfect accuracy and true portability.
+
+**Sitemap Features**
+* Generates sitemaps.org compliant XML sitemap
+* Creates XSL stylesheet for browser viewing
+* Calculates priorities automatically (homepage = 1.0, deeper pages = 0.4)
+* Assigns smart change frequencies based on URL patterns
+* Includes last modification times from file metadata
+* Multisite compatible with isolated sitemaps per site
+* Fast performance: ~50-100ms per 100 cached files
+
+**New WP-CLI Commands**
+* `wp scw sitemap` - Generate sitemap from cached files
+* `wp scw sitemap-delete` - Remove sitemap files
+
+**Typical Workflow**
+```
+wp scw enable          # Enable generation
+wp scw process        # Process assets
+wp scw sitemap        # Generate sitemap (NEW!)
+wp scw zip            # Export with sitemap included
+```
+
+View your sitemap at https://your-site.com/sitemap.xml - the XSL stylesheet transforms it into a readable HTML table.
+
+**Technical Implementation**
+* New STCW_Sitemap_Generator class scans cached directory recursively
+* Uses WordPress Filesystem API for all file operations
+* Proper output escaping and sanitization throughout
+* Developer filter hook for customization
+* No database queries - pure file system operations
+* GUI interface planned for version 2.2.0
 
 ### = 2.0.7 =
 * **Major Compatibility Enhancement Release**

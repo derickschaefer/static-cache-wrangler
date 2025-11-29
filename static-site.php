@@ -3,7 +3,7 @@
  * Plugin Name: Static Cache Wrangler
  * Plugin URI: https://moderncli.dev/code/static-cache-wrangler/
  * Description: Generate static HTML files with fully local CSS/JS/Images/Fonts
- * Version: 2.0.7
+ * Version: 2.1.0
  * Author: Derick Schaefer
  * Author URI: https://moderncli.dev/author/
  * Text Domain: static-cache-wrangler
@@ -16,7 +16,7 @@
 if (!defined('ABSPATH')) exit;
 
 // Plugin constants
-define('STCW_VERSION', '2.0.7');
+define('STCW_VERSION', '2.1.0');
 define('STCW_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('STCW_PLUGIN_URL', plugin_dir_url(__FILE__));
 

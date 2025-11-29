@@ -150,6 +150,17 @@ public function save_output($output) {
         WP_Filesystem();
     }
 
+    // Force direct method if WP_Filesystem is using FTP
+    if ($wp_filesystem && !($wp_filesystem instanceof WP_Filesystem_Direct)) {
+        require_once ABSPATH . 'wp-admin/includes/class-wp-filesystem-direct.php';
+        $wp_filesystem = new WP_Filesystem_Direct(null);
+    }
+
+    // Define FS_CHMOD_FILE if not already defined
+    if (!defined('FS_CHMOD_FILE')) {
+        define('FS_CHMOD_FILE', 0644);
+    }
+
     // Profiling hook - before file save
     do_action('stcw_before_file_save', $static_file);
 

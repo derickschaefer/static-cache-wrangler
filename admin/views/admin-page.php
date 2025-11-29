@@ -295,7 +295,9 @@ $stcw_message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['mes
                     <code style="display:block;padding:5px;background:#f0f0f1;margin-bottom:5px;">wp scw disable</code>
                     <code style="display:block;padding:5px;background:#f0f0f1;margin-bottom:5px;">wp scw status</code>
                     <code style="display:block;padding:5px;background:#f0f0f1;margin-bottom:5px;">wp scw process</code>
-                    <code style="display:block;padding:5px;background:#f0f0f1;">wp scw clear</code>
+		    <code style="display:block;padding:5px;background:#f0f0f1;">wp scw clear</code>
+		    <code style="display:block;padding:5px;background:#f0f0f1;margin-bottom:5px;">wp scw sitemap</code>
+		    <code style="display:block;padding:5px;background:#f0f0f1;margin-bottom:5px;">wp scw sitemap-delete</code>
                 </div>
             </div>
         </div>

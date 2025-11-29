@@ -209,4 +209,95 @@ class STCW_CLI {
         
         WP_CLI::success("ZIP created: $zip_file ($size)");
     }
+    
+    /**
+     * Generate sitemap.xml from cached static files
+     *
+     * Creates a sitemap.xml and sitemap.xsl file in the static directory root
+     * based on the actual cached HTML files. Uses the file system as the source
+     * of truth rather than the WordPress database.
+     *
+     * The sitemap includes:
+     * - All cached index.html files as URLs
+     * - Last modification times from file metadata
+     * - Calculated priorities based on URL depth
+     * - Reasonable change frequency defaults
+     * - XSL stylesheet for browser viewing
+     *
+     * ## OPTIONS
+     *
+     * [--target-url=<url>]
+     * : Target deployment URL for the static site.
+     *
+     * ## EXAMPLES
+     *
+     *     # Use WordPress site URL (default)
+     *     wp scw sitemap
+     *
+     *     # Specify deployment URL
+     *     wp scw sitemap --target-url=https://static.example.com
+     *     wp scw sitemap --target-url=https://cdn.mysite.com
+     *
+     * @when after_wp_load
+     */
+    public function sitemap($args, $assoc_args) {
+        WP_CLI::log("Generating sitemap from cached files...");
+        
+        // Get target URL from parameter or use WordPress site URL
+        $target_url = '';
+        if (isset($assoc_args['target-url']) && !empty($assoc_args['target-url'])) {
+            $target_url = untrailingslashit($assoc_args['target-url']);
+            WP_CLI::log("Using deployment URL: $target_url");
+        }
+        
+        $generator = new STCW_Sitemap_Generator($target_url);
+        $result = $generator->generate();
+        
+        if (!$result['success']) {
+            WP_CLI::error($result['message']);
+        }
+        
+        WP_CLI::success($result['message']);
+        
+        // Display file locations
+        if (!empty($result['files'])) {
+            WP_CLI::log("");
+            WP_CLI::log("Files created:");
+            foreach ($result['files'] as $type => $path) {
+                WP_CLI::log("  " . ucfirst($type) . ": " . $path);
+            }
+        }
+        
+        // Provide helpful next steps with actual deployment URL
+        $view_url = $target_url ? $target_url : home_url();
+        WP_CLI::log("");
+        WP_CLI::log("Next steps:");
+        WP_CLI::log("  1. View sitemap in browser: " . $view_url . '/sitemap.xml');
+        WP_CLI::log("  2. Submit to search engines (if deploying live)");
+        WP_CLI::log("  3. Include in ZIP export: wp scw zip");
+    }
+    
+    /**
+     * Delete sitemap files
+     *
+     * Removes sitemap.xml and sitemap.xsl from the static directory.
+     * Useful when you want to regenerate the sitemap or clean up before export.
+     *
+     * ## EXAMPLES
+     *
+     *     wp scw sitemap-delete
+     *
+     * @subcommand sitemap-delete
+     * @when after_wp_load
+     */
+    public function sitemap_delete() {
+        $generator = new STCW_Sitemap_Generator();
+        $deleted = $generator->delete_sitemap();
+        
+        if ($deleted) {
+            WP_CLI::success("Sitemap files deleted.");
+        } else {
+            WP_CLI::warning("No sitemap files found to delete.");
+        }
+    }
 }
