@@ -3,13 +3,95 @@
  * Modern card-based UI styling
  */
 
-/* Modern card-based UI styling */
+/* Layout Structure */
+.stcw-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important;
+    gap: 20px !important;
+    margin-top: 20px !important;
+    margin-bottom: 20px !important;
+}
+
+/* Two-column layout - super specific selectors */
+.wrap .stcw-layout,
+div.wrap div.stcw-layout {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 20px !important;
+    align-items: flex-start !important;
+    margin-top: 20px !important;
+    flex-wrap: nowrap !important;
+}
+
+.wrap .stcw-main-content,
+div.wrap div.stcw-main-content {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    max-width: calc(100% - 340px) !important;
+}
+
+.wrap .stcw-sidebar,
+div.wrap div.stcw-sidebar {
+    width: 320px !important;
+    flex: 0 0 320px !important;
+    min-width: 320px !important;
+}
+
+/* Responsive breakpoint for smaller screens */
+@media (max-width: 1024px) {
+    .wrap .stcw-layout,
+    div.wrap div.stcw-layout {
+        flex-wrap: wrap !important;
+    }
+    
+    .wrap .stcw-main-content,
+    div.wrap div.stcw-main-content {
+        max-width: 100% !important;
+    }
+    
+    .wrap .stcw-sidebar,
+    div.wrap div.stcw-sidebar {
+        width: 100% !important;
+        flex: 1 1 100% !important;
+    }
+}
+
+/* Card Styling */
 .stcw-card {
     background: #fff;
     border: 1px solid #ccd0d4;
     border-radius: 6px;
     padding: 20px;
     box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+/* Cards inside grid don't need bottom margin (grid gap handles it) */
+.stcw-grid .stcw-card {
+    margin-bottom: 0 !important;
+}
+
+/* Cards in main content and sidebar need bottom margin - FORCE IT */
+.stcw-main-content .stcw-card,
+.wrap .stcw-main-content .stcw-card,
+div.wrap div.stcw-main-content div.stcw-card {
+    margin-bottom: 20px !important;
+}
+
+.stcw-sidebar .stcw-card,
+.wrap .stcw-sidebar .stcw-card,
+div.wrap div.stcw-sidebar div.stcw-card {
+    margin-bottom: 20px !important;
+}
+
+/* Last child gets no margin */
+.stcw-main-content .stcw-card:last-child,
+.wrap .stcw-main-content .stcw-card:last-child {
+    margin-bottom: 0 !important;
+}
+
+.stcw-sidebar .stcw-card:last-child,
+.wrap .stcw-sidebar .stcw-card:last-child {
+    margin-bottom: 0 !important;
 }
 
 .stcw-card h3,
@@ -21,6 +103,7 @@
     color: #23282d;
 }
 
+/* Status Values */
 .stcw-value {
     font-size: 32px;
     font-weight: 700;
@@ -42,10 +125,7 @@
     color: #646970;
 }
 
-.stcw-panel {
-    margin-top: 20px;
-}
-
+/* Status Indicators */
 .stcw-ok {
     color: #46b450;
     font-weight: 600;
@@ -56,7 +136,7 @@
     font-weight: 600;
 }
 
-/* Progress bar styling */
+/* Progress Bar */
 .stcw-progress {
     margin: 15px 0;
     padding: 10px;
@@ -82,4 +162,56 @@
 .stcw-progress-text {
     margin-top: 6px;
     font-size: 12px;
+}
+
+/* Content Spacing */
+.stcw-card p {
+    margin: 0 0 10px;
+    line-height: 1.6;
+}
+
+.stcw-card p:last-child {
+    margin-bottom: 0;
+}
+
+.stcw-card ol,
+.stcw-card ul {
+    margin: 10px 0 10px 20px;
+}
+
+.stcw-card li {
+    margin-bottom: 8px;
+    line-height: 1.6;
+}
+
+.stcw-card li:last-child {
+    margin-bottom: 0;
+}
+
+/* Tables */
+.stcw-card table {
+    margin-top: 10px;
+}
+
+/* Companion Plugin Card Specific */
+.stcw-companion-note {
+    padding: 12px;
+    background: #e8f5e9;
+    border-left: 4px solid #46b450;
+    border-radius: 4px;
+    margin-top: 15px;
+}
+
+.stcw-companion-note strong {
+    display: block;
+    margin-bottom: 5px;
+    color: #1b5e20;
+}
+
+/* Multisite Warning */
+.stcw-multisite-warning {
+    padding: 10px;
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    margin-top: 15px;
 }

@@ -44,7 +44,23 @@ $stcw_messages = [
 // Safely get and validate the message parameter (nonce verified by admin-post.php handlers)
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Nonce verified by admin-post.php action handlers
 $stcw_message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['message'])) : '';
+
 ?>
+<style type="text/css">
+/* Failsafe inline styles for layout */
+.wrap .stcw-grid { display: grid !important; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important; gap: 20px !important; margin-bottom: 20px !important; }
+.wrap .stcw-layout { display: flex !important; gap: 20px !important; align-items: flex-start !important; flex-wrap: nowrap !important; }
+.wrap .stcw-main-content { flex: 1 1 auto !important; min-width: 0 !important; }
+.wrap .stcw-sidebar { width: 320px !important; flex: 0 0 320px !important; }
+.wrap .stcw-main-content .stcw-card { margin-bottom: 20px !important; }
+.wrap .stcw-sidebar .stcw-card { margin-bottom: 20px !important; }
+.wrap .stcw-main-content .stcw-card:last-child { margin-bottom: 0 !important; }
+.wrap .stcw-sidebar .stcw-card:last-child { margin-bottom: 0 !important; }
+.stcw-sidebar .button { margin-bottom: 10px !important; }
+.stcw-sidebar .button:last-of-type { margin-bottom: 0 !important; }
+.stcw-sidebar form { margin-bottom: 10px !important; }
+</style>
+
 <div class="wrap">
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
 
@@ -55,7 +71,7 @@ $stcw_message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['mes
     <?php endif; ?>
 
     <!-- Cards Grid -->
-    <div class="stcw-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;margin-top:20px;">
+    <div class="stcw-grid">
         <!-- Generation Status Card -->
         <div class="stcw-card">
             <h3><?php esc_html_e('Generation Status', 'static-cache-wrangler'); ?></h3>
@@ -64,7 +80,7 @@ $stcw_message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['mes
             </div>
             <div class="stcw-label">
                 <?php
-                $stcw_static_files_text = sprintf(
+                echo esc_html(sprintf(
                     /* translators: %s: formatted number of static files */
                     _n(
                         '%s static file',
@@ -73,8 +89,7 @@ $stcw_message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['mes
                         'static-cache-wrangler'
                     ),
                     number_format_i18n($stcw_static_count)
-                );
-                echo esc_html($stcw_static_files_text);
+                ));
                 ?>
             </div>
         </div>
@@ -87,7 +102,7 @@ $stcw_message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['mes
             </div>
             <div class="stcw-label">
                 <?php
-                $stcw_pending_text = sprintf(
+                echo esc_html(sprintf(
                     /* translators: %s: formatted number of pending assets */
                     _n(
                         '%s pending',
@@ -96,10 +111,8 @@ $stcw_message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['mes
                         'static-cache-wrangler'
                     ),
                     number_format_i18n($stcw_pending_count)
-                );
-                echo esc_html($stcw_pending_text);
+                ));
                 ?>
-
                 <?php if ($stcw_pending_count > 0 && $stcw_enabled): ?>
                     <span aria-hidden="true" title="<?php esc_attr_e('Pending assets exist', 'static-cache-wrangler'); ?>">⚠</span>
                 <?php endif; ?>
@@ -114,14 +127,15 @@ $stcw_message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['mes
         </div>
     </div>
 
-    <div class="stcw-layout" style="display:flex;gap:20px;align-items:flex-start;margin-top:20px;">
+    <!-- Two Column Layout -->
+    <div class="stcw-layout">
         <!-- Main Content -->
-        <div style="flex:1;min-width:0;">
+        <div class="stcw-main-content">
 
             <!-- File System Locations Panel -->
-            <div class="stcw-panel stcw-card">
+            <div class="stcw-card">
                 <h2 class="stcw-panel-title"><?php esc_html_e('File System Locations', 'static-cache-wrangler'); ?></h2>
-                <table class="widefat" style="margin-top:10px;">
+                <table class="widefat">
                     <tbody>
                         <?php if ($stcw_is_multisite): ?>
                         <tr>
@@ -172,11 +186,11 @@ $stcw_message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['mes
 
             <?php if ($stcw_enabled && $stcw_pending_count > 0): ?>
             <!-- Pending Assets Processing Panel -->
-            <div class="stcw-panel stcw-card">
+            <div class="stcw-card">
                 <h2 class="stcw-panel-title"><?php esc_html_e('Asset Processing', 'static-cache-wrangler'); ?></h2>
                 <p>
                 <?php
-                $stcw_assets_message = sprintf(
+                echo esc_html(sprintf(
                     /* translators: %d: number of assets waiting to be downloaded */
                     _n(
                         'There is %d asset waiting to be downloaded.',
@@ -185,8 +199,7 @@ $stcw_message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['mes
                         'static-cache-wrangler'
                     ),
                     $stcw_pending_count
-                );
-                echo esc_html($stcw_assets_message);
+                ));
                 ?>	
                 </p>
                 <div id="stcw-processing-status" class="stcw-progress" style="display:none;">
@@ -204,9 +217,9 @@ $stcw_message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['mes
             <?php endif; ?>
 
             <!-- How It Works Panel -->
-            <div class="stcw-panel stcw-card">
+            <div class="stcw-card">
                 <h2 class="stcw-panel-title"><?php esc_html_e('How It Works', 'static-cache-wrangler'); ?></h2>
-                <ol style="margin-left:20px;">
+                <ol>
                     <li><?php esc_html_e('Enable static site generation using the toggle in the sidebar.', 'static-cache-wrangler'); ?></li>
                     <li><?php esc_html_e('As users browse your site normally - each page visit creates a static HTML file.', 'static-cache-wrangler'); ?></li>
                     <li><?php esc_html_e('Assets (CSS, JS, images, fonts) are automatically downloaded and localized.', 'static-cache-wrangler'); ?></li>
@@ -214,40 +227,67 @@ $stcw_message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['mes
                     <li><?php esc_html_e('Download the complete static site as a ZIP file.', 'static-cache-wrangler'); ?></li>
                     <li><?php esc_html_e('Extract and open index.html in any browser - works completely offline!', 'static-cache-wrangler'); ?></li>
                 </ol>
+
                 <?php if ($stcw_is_multisite): ?>
-                <p style="margin-top:15px;padding:10px;background:#fff3cd;border-left:4px solid #ffc107;">
+                <div class="stcw-multisite-warning">
                     <strong><?php esc_html_e('Multisite Note:', 'static-cache-wrangler'); ?></strong>
                     <?php esc_html_e('Each site in your network has its own isolated static files directory. Generate and export sites independently.', 'static-cache-wrangler'); ?>
-                </p>
+                </div>
                 <?php endif; ?>
+            </div>
+
+            <!-- Use Cases Panel -->
+            <div class="stcw-card">
                 <h2 class="stcw-panel-title"><?php esc_html_e('Use Cases', 'static-cache-wrangler'); ?></h2>
-                <ol style="margin-left:20px;">
+                <ol>
                     <li><?php esc_html_e('Generate a fully self-contained static version of a WordPress site for portability or offline use.', 'static-cache-wrangler'); ?></li>
                     <li><?php esc_html_e('Rsync to a backup Nginx failover server to provide high read-only availability.', 'static-cache-wrangler'); ?></li>
-                    <li><?php esc_html_e('Build in WordPress and seamlessly publish to Amazon S3&reg; or a static CDN for global delivery.', 'static-cache-wrangler'); ?></li>
-                    <li><?php esc_html_e('Rsync to multiple geographies and geo-load balance with Cloudflare&reg; or another DNS provider for fast, local reads.', 'static-cache-wrangler'); ?></li>
+                    <li><?php esc_html_e('Build in WordPress and seamlessly publish to Amazon S3® or a static CDN for global delivery.', 'static-cache-wrangler'); ?></li>
+                    <li><?php esc_html_e('Rsync to multiple geographies and geo-load balance with Cloudflare® or another DNS provider for fast, local reads.', 'static-cache-wrangler'); ?></li>
                 </ol>
             </div>
+
+            <!-- Companion Plugin Card -->
+            <div class="stcw-card">
+                <h2 class="stcw-panel-title">
+                    <?php esc_html_e('Companion Plugin: Coverage Assistant', 'static-cache-wrangler'); ?>
+                </h2>
+                <p>
+                    <?php
+                    printf(
+			wp_kses(
+			/* translators: %s: Link to Coverage Assistant plugin */
+                            __('Improve visibility into which pages have been statically cached by installing the free %s companion plugin.', 'static-cache-wrangler'),
+                            ['a' => ['href' => [], 'target' => []]]
+                        ),
+                        '<a href="https://wordpress.org/plugins/stcw-coverage-assistant/" target="_blank">Coverage Assistant</a>'
+                    );
+                    ?>
+                </p>
+                
+            </div>
+
         </div>
 
         <!-- Sidebar -->
-        <div style="width:320px;flex:0 0 320px;">
+        <div class="stcw-sidebar">
+            
             <!-- Quick Actions Card -->
             <div class="stcw-card">
                 <h2 class="stcw-panel-title"><?php esc_html_e('Quick Actions', 'static-cache-wrangler'); ?></h2>
 
-                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top:15px;">
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
                     <?php wp_nonce_field('stcw_toggle_action', 'stcw_toggle_nonce'); ?>
                     <input type="hidden" name="action" value="stcw_toggle" />
                     <input type="hidden" name="enable" value="<?php echo $stcw_enabled ? '0' : '1'; ?>" />
 
                     <?php if ($stcw_enabled): ?>
-                        <button type="submit" class="button button-secondary button-large" style="width:100%;margin-bottom:10px;">
+                        <button type="submit" class="button button-secondary button-large" style="width:100%;">
                             <span class="dashicons dashicons-no" style="margin-top:3px;"></span>
                             <?php esc_html_e('Pause Generation', 'static-cache-wrangler'); ?>
                         </button>
                     <?php else: ?>
-                        <button type="submit" class="button button-primary button-large" style="width:100%;margin-bottom:10px;">
+                        <button type="submit" class="button button-primary button-large" style="width:100%;">
                             <span class="dashicons dashicons-yes" style="margin-top:3px;"></span>
                             <?php esc_html_e('Enable Generation', 'static-cache-wrangler'); ?>
                         </button>
@@ -256,7 +296,7 @@ $stcw_message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['mes
 
                 <?php if ($stcw_static_count > 0): ?>
                     <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=stcw_download'), 'stcw_download_action')); ?>"
-                       class="button button-primary button-large" style="width:100%;text-align:center;margin-bottom:10px;">
+                       class="button button-primary button-large" style="width:100%;text-align:center;">
                         <span class="dashicons dashicons-download" style="margin-top:3px;"></span>
                         <?php esc_html_e('Download ZIP', 'static-cache-wrangler'); ?>
                     </a>
@@ -268,7 +308,7 @@ $stcw_message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['mes
                         <?php esc_html_e('Clear All Files', 'static-cache-wrangler'); ?>
                     </a>
                 <?php else: ?>
-                    <p style="color:#666;font-size:13px;margin-top:10px;">
+                    <p style="color:#646970;font-size:13px;margin-top:15px;margin-bottom:0;">
                         <?php esc_html_e('No static files yet. Enable generation and browse your site to create static files.', 'static-cache-wrangler'); ?>
                     </p>
                 <?php endif; ?>
@@ -277,12 +317,15 @@ $stcw_message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['mes
             <!-- Info Card -->
             <div class="stcw-card">
                 <h2 class="stcw-panel-title"><?php esc_html_e('Information', 'static-cache-wrangler'); ?></h2>
-                <p style="font-size:13px;line-height:1.6;">
+                <p>
                     <strong><?php esc_html_e('Version:', 'static-cache-wrangler'); ?></strong>
-                    <?php echo defined('STCW_VERSION') ? esc_html(STCW_VERSION) : 'N/A'; ?><br>
-                    <strong><?php esc_html_e('Plugin:', 'static-cache-wrangler'); ?></strong> Static Cache Wrangler
+                    <?php echo defined('STCW_VERSION') ? esc_html(STCW_VERSION) : 'N/A'; ?>
                 </p>
-                <p style="font-size:13px;line-height:1.6;margin-top:10px;">
+                <p>
+                    <strong><?php esc_html_e('Plugin:', 'static-cache-wrangler'); ?></strong>
+                    Static Cache Wrangler
+                </p>
+                <p>
                     <?php esc_html_e('This plugin generates a fully self-contained static version of your WordPress site that can be deployed anywhere or run completely offline.', 'static-cache-wrangler'); ?>
                 </p>
             </div>
@@ -295,11 +338,12 @@ $stcw_message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['mes
                     <code style="display:block;padding:5px;background:#f0f0f1;margin-bottom:5px;">wp scw disable</code>
                     <code style="display:block;padding:5px;background:#f0f0f1;margin-bottom:5px;">wp scw status</code>
                     <code style="display:block;padding:5px;background:#f0f0f1;margin-bottom:5px;">wp scw process</code>
-		    <code style="display:block;padding:5px;background:#f0f0f1;">wp scw clear</code>
-		    <code style="display:block;padding:5px;background:#f0f0f1;margin-bottom:5px;">wp scw sitemap</code>
-		    <code style="display:block;padding:5px;background:#f0f0f1;margin-bottom:5px;">wp scw sitemap-delete</code>
+                    <code style="display:block;padding:5px;background:#f0f0f1;margin-bottom:5px;">wp scw clear</code>
+                    <code style="display:block;padding:5px;background:#f0f0f1;margin-bottom:5px;">wp scw sitemap</code>
+                    <code style="display:block;padding:5px;background:#f0f0f1;">wp scw sitemap-delete</code>
                 </div>
             </div>
+
         </div>
     </div>
 </div>

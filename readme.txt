@@ -332,6 +332,7 @@ The meta tag removal only affects WordPress core tags, not SEO plugin meta tags 
 * **IMPROVED:** Perfect accuracy - sitemap reflects actual exported content
 * **IMPROVED:** Multisite compatible with isolated sitemaps per site
 * **PERFORMANCE:** ~50-100ms scan time per 100 cached files, ~2MB memory for 1,000+ pages
+* **FIX:** Fixed CSS mismatches resulting in admin card layout
 * **COMPATIBLE:** WordPress 6.8.3, PHP 7.4-8.3
 * **NOTE:** GUI interface planned for v2.2.0 (currently CLI-only)
 
@@ -392,7 +393,7 @@ View your sitemap at https://your-site.com/sitemap.xml - the XSL stylesheet tran
 * Increased reliability for mixed-content layouts and advanced interactive block patterns.
 
 **Compatibility**
-* Tested with WordPress 6.8.3 and PHP 7.4–8.3
+* Tested with WordPress 6.9 and PHP 8.3.6
 * Fully backward compatible with 2.0.6
 
 **Migration Notes**
