@@ -25,18 +25,23 @@ class STCW_Sitemap_Generator {
      * @var string
      */
     private $base_url;
-    
+
     /**
      * Constructor - initialize dependencies
      *
+     * @since 2.1.0
+     * @since 2.1.1 Added support for STCW_SITEMAP_URL constant
      * @param string $custom_url Optional custom URL for deployment target
      */
     public function __construct($custom_url = '') {
         $this->url_helper = new STCW_URL_Helper();
-        
-        // Use custom URL if provided, otherwise use WordPress site URL
+
+        // Priority: 1) Constructor parameter, 2) wp-config.php constant, 3) Site URL
         if (!empty($custom_url)) {
             $this->base_url = untrailingslashit($custom_url);
+        } elseif (defined('STCW_SITEMAP_URL') && !empty(STCW_SITEMAP_URL)) {
+            $this->base_url = untrailingslashit(STCW_SITEMAP_URL);
+            stcw_log_debug('Using custom sitemap URL from wp-config.php: ' . $this->base_url);
         } else {
             $this->base_url = $this->url_helper->site_url();
         }

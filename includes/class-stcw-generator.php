@@ -106,80 +106,97 @@ class STCW_Generator {
         ob_start([$this, 'save_output']);
     }
 
-   /**
- * Save output buffer to static file
- *
- * Callback for ob_start() - processes and saves HTML
- *
- * @param string $output HTML output from WordPress
- * @return string Original output (unchanged for display)
- */
-public function save_output($output) {
-    $static_file = $this->url_helper->get_static_file_path();
-    $static_dir = dirname($static_file);
+    /**
+     * Save output buffer to static file
+     *
+     * Callback for ob_start() - processes and saves HTML.
+     * Checks if existing file is stale before regenerating.
+     *
+     * @since 2.0
+     * @since 2.1.1 Added staleness checking before regeneration
+     * @param string $output HTML output from WordPress
+     * @return string Original output (unchanged for display)
+     */
+    public function save_output($output) {
+        $static_file = $this->url_helper->get_static_file_path();
+        $static_dir = dirname($static_file);
 
-    // Create directory if it doesn't exist
-    if (!is_dir($static_dir)) {
-        wp_mkdir_p($static_dir);
-    }
+        // Check if file exists and is still fresh
+        if (file_exists($static_file)) {
+            if (!STCW_Core::is_file_stale($static_file)) {
+                stcw_log_debug('Cache fresh, skipping regeneration: ' . basename($static_file));
+                return $output; // Don't regenerate, serve WordPress output normally
+            }
+            stcw_log_debug('Cache stale, regenerating: ' . basename($static_file));
+        }
 
-    // Work with the complete output
-    $static_output = $output;
+        // File doesn't exist or is stale → Generate new static version
+        
+        // Create directory if it doesn't exist
+        if (!is_dir($static_dir)) {
+            wp_mkdir_p($static_dir);
+        }
 
-    // Extract assets FIRST - before any rewriting
-    $assets = $this->extract_asset_urls($output);
+        // Work with the complete output
+        $static_output = $output;
 
-    // Process assets asynchronously if enabled
-    if (STCW_ASYNC_ASSETS) {
-        // Rewrite asset paths
-        $static_output = $this->rewrite_asset_paths($static_output);
-        // Queue assets for download
-        $this->asset_handler->queue_asset_downloads($assets);
-    }
+        // Extract assets FIRST - before any rewriting
+        $assets = $this->extract_asset_urls($output);
 
-    // Rewrite internal links to relative paths
-    $static_output = $this->rewrite_links($static_output);
+        // Process assets asynchronously if enabled
+        if (STCW_ASYNC_ASSETS) {
+            // Rewrite asset paths
+            $static_output = $this->rewrite_asset_paths($static_output);
+            // Queue assets for download
+            $this->asset_handler->queue_asset_downloads($assets);
+        }
 
-    // Add metadata and clean up WordPress-specific tags
-    $static_output = $this->process_static_html($static_output);
+        // Rewrite internal links to relative paths
+        $static_output = $this->rewrite_links($static_output);
 
-    // Initialize WP_Filesystem
-    global $wp_filesystem;
-    if (empty($wp_filesystem)) {
-        require_once ABSPATH . 'wp-admin/includes/file.php';
-        WP_Filesystem();
-    }
+        // Add metadata and clean up WordPress-specific tags
+        $static_output = $this->process_static_html($static_output);
 
-    // Force direct method if WP_Filesystem is using FTP
-    if ($wp_filesystem && !($wp_filesystem instanceof WP_Filesystem_Direct)) {
-        require_once ABSPATH . 'wp-admin/includes/class-wp-filesystem-direct.php';
-        $wp_filesystem = new WP_Filesystem_Direct(null);
-    }
+        // Initialize WP_Filesystem
+        global $wp_filesystem;
+        if (empty($wp_filesystem)) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            WP_Filesystem();
+        }
 
-    // Define FS_CHMOD_FILE if not already defined by WordPress core
-    // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- WordPress core constant
-    if (!defined('FS_CHMOD_FILE')) {
+        // Force direct method if WP_Filesystem is using FTP
+        if ($wp_filesystem && !($wp_filesystem instanceof WP_Filesystem_Direct)) {
+            require_once ABSPATH . 'wp-admin/includes/class-wp-filesystem-direct.php';
+            $wp_filesystem = new WP_Filesystem_Direct(null);
+        }
+
+        // Define FS_CHMOD_FILE if not already defined by WordPress core
         // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- WordPress core constant
-        define('FS_CHMOD_FILE', 0644);
+        if (!defined('FS_CHMOD_FILE')) {
+            // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- WordPress core constant
+            define('FS_CHMOD_FILE', 0644);
+        }
+
+        // Profiling hook - before file save
+        do_action('stcw_before_file_save', $static_file);
+
+        // Save static file using WP_Filesystem
+        if ($wp_filesystem) {
+            $success = $wp_filesystem->put_contents($static_file, $static_output, FS_CHMOD_FILE);
+            if ($success) {
+                stcw_log_debug('Successfully saved: ' . basename($static_file));
+            }
+        } else {
+            stcw_log_debug('Failed to initialize WP_Filesystem for saving static file');
+            $success = false;
+        }
+
+        // Profiling hook - after file save
+        do_action('stcw_after_file_save', $success, $static_file);
+
+        // Return original output unchanged for browser display
+        return $output;
     }
-
-    // Profiling hook - before file save
-    do_action('stcw_before_file_save', $static_file);
-
-    // Save static file using WP_Filesystem
-    if ($wp_filesystem) {
-        $success = $wp_filesystem->put_contents($static_file, $static_output, FS_CHMOD_FILE);
-    } else {
-        stcw_log_debug('Failed to initialize WP_Filesystem for saving static file');
-        $success = false;
-    }
-
-    // Profiling hook - after file save
-    do_action('stcw_after_file_save', $success, $static_file);
-
-    // Return original output unchanged for browser display
-    return $output;
-}
     
     /**
      * Extract asset URLs from HTML
@@ -490,15 +507,32 @@ public function save_output($output) {
     /**
      * Process HTML for static output
      *
-     * Removes WordPress core meta tags while preserving SEO plugin tags.
+     * Injects metadata stamp, removes WordPress core meta tags while preserving SEO plugin tags.
      * Uses allowlist approach to protect important SEO metadata.
      *
+     * @since 2.0
+     * @since 2.0.5 Added WordPress meta tag removal
+     * @since 2.1.1 Added metadata stamp injection
      * @param string $html HTML content
      * @return string Processed HTML
      */
     private function process_static_html($html) {
-        $timestamp = current_time('Y-m-d H:i:s');
-        $comment = "\n<!-- Static version generated: $timestamp -->\n";
+        // Inject metadata comment at top of file
+        $timestamp = gmdate('c'); // ISO 8601 format (e.g., 2025-01-03T12:55:44Z)
+        $version = STCW_VERSION;
+        $metadata = "<!-- StaticCacheWrangler: generated={$timestamp}; plugin={$version} -->\n";
+        
+        // Inject after <!DOCTYPE html> if present, otherwise prepend
+        if (preg_match('/<!DOCTYPE[^>]*>/i', $html, $matches, PREG_OFFSET_CAPTURE)) {
+            $pos = $matches[0][1] + strlen($matches[0][0]);
+            $html = substr_replace($html, "\n" . $metadata, $pos, 0);
+        } else {
+            // No DOCTYPE found, prepend to entire file
+            $html = $metadata . $html;
+        }
+        
+        // Add generation timestamp comment at bottom (for backward compatibility)
+        $comment = "\n<!-- Static version generated: " . gmdate('Y-m-d H:i:s') . " UTC -->\n";
         
         // ALLOWLIST for SEO/meta tags (never remove)
         $allowlist_patterns = [
@@ -538,7 +572,7 @@ public function save_output($output) {
             '#<link[^>]+type=["\']application/json\+oembed["\'][^>]*>#i',
             '#<link[^>]+type=["\']text/xml\+oembed["\'][^>]*>#i',
             
-            // CHANGE 3: Emoji scripts (external with src) - improved regex
+            // Emoji scripts (external with src)
             '#<script[^>]+src=["\'][^"\']*wp-emoji[^"\']*["\'][^>]*></script>#i',
             
             // wp-embed.js

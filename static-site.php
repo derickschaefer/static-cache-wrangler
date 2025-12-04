@@ -3,7 +3,7 @@
  * Plugin Name: Static Cache Wrangler
  * Plugin URI: https://moderncli.dev/code/static-cache-wrangler/
  * Description: Generate static HTML files with fully local CSS/JS/Images/Fonts
- * Version: 2.1.0
+ * Version: 2.1.1
  * Author: Derick Schaefer
  * Author URI: https://moderncli.dev/author/
  * Text Domain: static-cache-wrangler
@@ -16,9 +16,61 @@
 if (!defined('ABSPATH')) exit;
 
 // Plugin constants
-define('STCW_VERSION', '2.1.0');
+define('STCW_VERSION', '2.1.1');
 define('STCW_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('STCW_PLUGIN_URL', plugin_dir_url(__FILE__));
+
+/**
+ * Cache TTL (Time To Live) in seconds
+ * 
+ * Determines how long a cached static file is considered fresh before regeneration.
+ * Default: 86400 seconds (24 hours)
+ * 
+ * Cached files are regenerated when:
+ * - File age exceeds this TTL
+ * - Plugin version is upgraded
+ * - File has no metadata (pre-v2.1.1)
+ * 
+ * Can be overridden in wp-config.php:
+ * 
+ * Examples:
+ *   define('STCW_CACHE_TTL', 3600);    // 1 hour
+ *   define('STCW_CACHE_TTL', 604800);  // 1 week  
+ *   define('STCW_CACHE_TTL', 0);       // Never expire based on time (version check only)
+ * 
+ * @since 2.1.1
+ */
+if (!defined('STCW_CACHE_TTL')) {
+    define('STCW_CACHE_TTL', 86400); // 24 hours default
+}
+
+/**
+ * Custom sitemap base URL
+ * 
+ * Use when deploying static site to a different domain than WordPress installation.
+ * Default: Empty string (uses WordPress site URL)
+ * 
+ * This is useful when you build your static site on one domain but deploy it to another.
+ * The sitemap will contain URLs for the deployment domain instead of the WordPress domain.
+ * 
+ * Examples:
+ * 
+ * CDN deployment:
+ *   define('STCW_SITEMAP_URL', 'https://static.example.com');
+ * 
+ * Amazon S3 deployment:
+ *   define('STCW_SITEMAP_URL', 'https://mybucket.s3.amazonaws.com');
+ * 
+ * Netlify deployment:
+ *   define('STCW_SITEMAP_URL', 'https://mysite.netlify.app');
+ * 
+ * If not defined or empty, the sitemap will use your WordPress site URL.
+ * 
+ * @since 2.1.1
+ */
+if (!defined('STCW_SITEMAP_URL')) {
+    define('STCW_SITEMAP_URL', '');
+}
 
 /**
  * Storage locations for static files and assets

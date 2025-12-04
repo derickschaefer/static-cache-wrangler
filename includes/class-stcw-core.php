@@ -196,7 +196,108 @@ class STCW_Core {
         $bytes /= pow(1024, $pow);
         return round($bytes, $precision) . ' ' . $units[$pow];
     }
+
+     /**
+     * Parse metadata from static file
+     *
+     * Reads first 512 bytes and extracts StaticCacheWrangler metadata comment.
+     * Format: <!-- StaticCacheWrangler: generated=2025-01-03T12:55:44Z; plugin=2.1.1 -->
+     *
+     * @since 2.1.1
+     * @param string $file_path Path to static HTML file
+     * @return array|false Metadata array with 'generated' and 'plugin' keys, or false if not found
+     */
+    public static function parse_file_metadata($file_path) {
+        if (!file_exists($file_path)) {
+            return false;
+        }
+        
+        // Initialize WP_Filesystem
+        global $wp_filesystem;
+        if (empty($wp_filesystem)) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            WP_Filesystem();
+        }
+        
+        // Read first 512 bytes only
+        $header = '';
+        if ($wp_filesystem && $wp_filesystem->exists($file_path)) {
+            $content = $wp_filesystem->get_contents($file_path);
+            if ($content !== false) {
+                $header = substr($content, 0, 512);
+            }
+        }
+        
+        if (empty($header)) {
+            return false;
+        }
+        
+        // Parse metadata comment
+        // Pattern: <!-- StaticCacheWrangler: generated=TIMESTAMP; plugin=VERSION -->
+        $pattern = '/<!--\s*StaticCacheWrangler:\s*generated=([^;]+);\s*plugin=([^\s;]+)\s*-->/';
+        
+        if (preg_match($pattern, $header, $matches)) {
+            return [
+                'generated' => trim($matches[1]),
+                'plugin'    => trim($matches[2])
+            ];
+        }
+        
+        return false;
+    }
     
+    /**
+     * Check if static file is stale and needs regeneration
+     *
+     * A file is considered stale if:
+     * 1. It has no metadata (pre-v2.1.1 file)
+     * 2. Plugin version in metadata is older than current version
+     * 3. File age exceeds configured TTL (STCW_CACHE_TTL)
+     *
+     * @since 2.1.1
+     * @param string $file_path Path to static HTML file
+     * @return bool True if file is stale, false if fresh
+     */
+     public static function is_file_stale($file_path) {
+        // Parse metadata
+        $metadata = self::parse_file_metadata($file_path);
+        
+        // No metadata = stale (backward compatibility)
+        if (!$metadata) {
+            stcw_log_debug('No metadata found, marking stale: ' . basename($file_path));
+            return true;
+        }
+        
+        // Plugin version check
+        if (version_compare($metadata['plugin'], STCW_VERSION, '<')) {
+            stcw_log_debug('Plugin upgraded, marking stale: ' . basename($file_path) . ' (cached: ' . $metadata['plugin'] . ', current: ' . STCW_VERSION . ')');
+            return true;
+        }
+        
+        // TTL check (age-based expiry)
+        $ttl = STCW_CACHE_TTL;
+        
+        // TTL of 0 means never expire based on time
+        if ($ttl > 0) {
+            $generated_time = strtotime($metadata['generated']);
+            
+            if ($generated_time === false) {
+                stcw_log_debug('Invalid timestamp, marking stale: ' . basename($file_path));
+                return true;
+            }
+            
+            $age = time() - $generated_time;
+            
+            if ($age > $ttl) {
+                stcw_log_debug('TTL exceeded, marking stale: ' . basename($file_path) . ' (age: ' . $age . 's, ttl: ' . $ttl . 's)');
+                return true;
+            }
+        }
+        
+        // File is fresh
+        return false;
+    }
+
     /**
      * Clear all static files and reset options
      */
@@ -244,10 +345,15 @@ class STCW_Core {
             $wp_filesystem->rmdir($dir, true);
         }
     }
-    
+
     /**
      * Create ZIP file of static site
-     * 
+     *
+     * Automatically generates a fresh sitemap before creating the ZIP to ensure
+     * all URLs are included in the export.
+     *
+     * @since 2.0
+     * @since 2.1.1 Added automatic sitemap generation before ZIP creation
      * @return string|false Path to ZIP file or false on failure
      */
     public static function create_zip() {
@@ -256,11 +362,23 @@ class STCW_Core {
             return false;
         }
 
+        // Always generate fresh sitemap before creating ZIP
+        stcw_log_debug('Generating fresh sitemap for ZIP export');
+        $generator = new STCW_Sitemap_Generator();
+        $result = $generator->generate();
+
+        if ($result['success']) {
+            stcw_log_debug('Sitemap generated successfully: ' . $result['url_count'] . ' URLs');
+        } else {
+            stcw_log_debug('Sitemap generation failed: ' . $result['message']);
+            // Continue with ZIP creation anyway (non-fatal)
+        }
+
         $zip_file = trailingslashit(WP_CONTENT_DIR . '/cache') . 'static-site-' . current_time('Y-m-d-H-i-s') . '.zip';
-        
+
         // Ensure cache directory exists
         wp_mkdir_p(dirname($zip_file));
-        
+
         $zip = new ZipArchive();
 
         if ($zip->open($zip_file, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
@@ -275,13 +393,16 @@ class STCW_Core {
         if (is_dir($static_dir)) {
             self::add_directory_to_zip($zip, $static_dir, '');
         }
-        
+
         // Add assets
         if (is_dir($assets_dir)) {
             self::add_directory_to_zip($zip, $assets_dir, 'assets');
         }
 
         $zip->close();
+
+        stcw_log_debug('ZIP file created successfully: ' . basename($zip_file));
+
         return $zip_file;
     }
     
