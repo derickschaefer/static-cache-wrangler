@@ -132,14 +132,113 @@ $stcw_message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['mes
         <!-- Main Content -->
         <div class="stcw-main-content">
 
-            <!-- File System Locations Panel -->
+            <!-- Configuration & File System Panel -->
             <div class="stcw-card">
-                <h2 class="stcw-panel-title"><?php esc_html_e('File System Locations', 'static-cache-wrangler'); ?></h2>
-                <table class="widefat">
+                <h2 class="stcw-panel-title"><?php esc_html_e('Configuration & File System', 'static-cache-wrangler'); ?></h2>
+                
+                <!-- Configuration Variables Section -->
+                <h3 style="margin-top:0;margin-bottom:10px;font-size:13px;font-weight:600;color:#646970;"><?php esc_html_e('Configuration', 'static-cache-wrangler'); ?></h3>
+                <table class="widefat" style="margin-bottom:20px;">
                     <tbody>
-                        <?php if ($stcw_is_multisite): ?>
+                        <?php
+                        // Get cache TTL value
+                        $stcw_cache_ttl = defined('STCW_CACHE_TTL') ? STCW_CACHE_TTL : 86400;
+                        $stcw_ttl_is_default = ($stcw_cache_ttl === 86400);
+                        
+                        // Format TTL display
+                        if ($stcw_cache_ttl === 0) {
+                            $stcw_ttl_display = esc_html__('Never expires', 'static-cache-wrangler') . ' ' . esc_html__('(custom: 0s)', 'static-cache-wrangler');
+                        } elseif ($stcw_cache_ttl < 3600) {
+                            $stcw_minutes = round($stcw_cache_ttl / 60);
+                            $stcw_ttl_display = sprintf(
+                                /* translators: %d: number of minutes */
+                                esc_html(_n('%d minute', '%d minutes', $stcw_minutes, 'static-cache-wrangler')),
+                                $stcw_minutes
+                            );
+                            if (!$stcw_ttl_is_default) {
+                                /* translators: %d: cache TTL value in seconds */
+                                $stcw_ttl_display .= ' ' . sprintf(esc_html__('(custom: %ds)', 'static-cache-wrangler'), $stcw_cache_ttl);
+                            }
+                        } elseif ($stcw_cache_ttl < 86400) {
+                            $stcw_hours = round($stcw_cache_ttl / 3600);
+                            $stcw_ttl_display = sprintf(
+                                /* translators: %d: number of hours */
+                                esc_html(_n('%d hour', '%d hours', $stcw_hours, 'static-cache-wrangler')),
+                                $stcw_hours
+                            );
+                            if (!$stcw_ttl_is_default) {
+                                /* translators: %d: cache TTL value in seconds */
+                                $stcw_ttl_display .= ' ' . sprintf(esc_html__('(custom: %ds)', 'static-cache-wrangler'), $stcw_cache_ttl);
+                            }
+                        } elseif ($stcw_cache_ttl < 604800) {
+                            $stcw_days = round($stcw_cache_ttl / 86400);
+                            $stcw_ttl_display = sprintf(
+                                /* translators: %d: number of days */
+                                esc_html(_n('%d day', '%d days', $stcw_days, 'static-cache-wrangler')),
+                                $stcw_days
+                            );
+                            if (!$stcw_ttl_is_default) {
+                                /* translators: %d: cache TTL value in seconds */
+                                $stcw_ttl_display .= ' ' . sprintf(esc_html__('(custom: %ds)', 'static-cache-wrangler'), $stcw_cache_ttl);
+                            }
+                        } else {
+                            $stcw_weeks = round($stcw_cache_ttl / 604800);
+                            $stcw_ttl_display = sprintf(
+                                /* translators: %d: number of weeks */
+                                esc_html(_n('%d week', '%d weeks', $stcw_weeks, 'static-cache-wrangler')),
+                                $stcw_weeks
+                            );
+                            /* translators: %d: cache TTL value in seconds */
+                            $stcw_ttl_display .= ' ' . sprintf(esc_html__('(custom: %ds)', 'static-cache-wrangler'), $stcw_cache_ttl);
+                        }
+                        
+                        if ($stcw_ttl_is_default) {
+                            $stcw_ttl_display .= ' ' . esc_html__('(default)', 'static-cache-wrangler');
+                        }
+                        
+                        // Get sitemap URL - show actual URL instead of generic "WordPress URL"
+                        $stcw_sitemap_url = defined('STCW_SITEMAP_URL') ? STCW_SITEMAP_URL : '';
+                        $stcw_site_url = home_url(); // Get actual WordPress URL
+                        
+                        // If custom URL is set and not empty, use it
+                        // Otherwise, show the actual default URL that will be used
+                        if (!empty($stcw_sitemap_url)) {
+                            $stcw_sitemap_display = '<code>' . esc_html($stcw_sitemap_url) . '</code> ' . esc_html__('(custom)', 'static-cache-wrangler');
+                        } else {
+                            $stcw_sitemap_display = '<code>' . esc_html($stcw_site_url) . '</code> ' . esc_html__('(default)', 'static-cache-wrangler');
+                        }
+                        
+                        // Get async assets setting
+                        $stcw_async_enabled = defined('STCW_ASYNC_ASSETS') ? STCW_ASYNC_ASSETS : true;
+                        $stcw_async_is_default = ($stcw_async_enabled === true);
+                        ?>
                         <tr>
-                            <td style="width:220px;"><strong><?php esc_html_e('Multisite', 'static-cache-wrangler'); ?></strong></td>
+                            <td style="width:220px;"><strong><?php esc_html_e('Cache TTL', 'static-cache-wrangler'); ?></strong></td>
+                            <td><?php echo wp_kses_post($stcw_ttl_display); ?></td>
+                        </tr>
+                        <tr class="alternate">
+                            <td><strong><?php esc_html_e('Sitemap URL', 'static-cache-wrangler'); ?></strong></td>
+                            <td><?php echo wp_kses_post($stcw_sitemap_display); ?></td>
+                        </tr>
+                        <tr>
+                            <td><strong><?php esc_html_e('Async Assets', 'static-cache-wrangler'); ?></strong></td>
+                            <td>
+                                <?php if ($stcw_async_enabled): ?>
+                                    <span class="stcw-ok">✓ <?php esc_html_e('Enabled', 'static-cache-wrangler'); ?></span>
+                                    <?php if ($stcw_async_is_default): ?>
+                                        <?php echo esc_html__('(default)', 'static-cache-wrangler'); ?>
+                                    <?php else: ?>
+                                        <?php echo esc_html__('(custom)', 'static-cache-wrangler'); ?>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <span class="stcw-bad">✗ <?php esc_html_e('Disabled', 'static-cache-wrangler'); ?></span>
+                                    <?php echo esc_html__('(custom)', 'static-cache-wrangler'); ?>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php if ($stcw_is_multisite): ?>
+                        <tr class="alternate">
+                            <td><strong><?php esc_html_e('Multisite', 'static-cache-wrangler'); ?></strong></td>
                             <td>
                                 <span class="stcw-ok">✓ <?php esc_html_e('Yes', 'static-cache-wrangler'); ?></span>
                                 <?php 
@@ -152,7 +251,14 @@ $stcw_message_key = isset($_GET['message']) ? sanitize_key(wp_unslash($_GET['mes
                             </td>
                         </tr>
                         <?php endif; ?>
-                        <tr <?php echo $stcw_is_multisite ? '' : 'class="alternate"'; ?>>
+                    </tbody>
+                </table>
+                
+                <!-- File System Section -->
+                <h3 style="margin-top:0;margin-bottom:10px;font-size:13px;font-weight:600;color:#646970;"><?php esc_html_e('File System', 'static-cache-wrangler'); ?></h3>
+                <table class="widefat">
+                    <tbody>
+                        <tr>
                             <td style="width:220px;"><strong><?php esc_html_e('Static Files', 'static-cache-wrangler'); ?></strong></td>
                             <td><code><?php echo esc_html($stcw_static_dir); ?></code></td>
                         </tr>
