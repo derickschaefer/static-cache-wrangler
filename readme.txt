@@ -70,6 +70,12 @@ A demo site created using this plugin can be found at [Cache Wrangler Demo Site]
 
 **What's New in 2.1.1:**
 
+= 2.1.2 =
+
+Version 2.1.2 introduces **configuration details** in addition to **file locations** on a key admin card.
+
+**What's New in 2.1.1:**
+
 = 2.1.1 =
 
 Version 2.1.1 introduces **cache file timestamps**, **staleness checks**, and adds **sitemap creation** to both the GUI and CLI zip file creation.
@@ -323,6 +329,9 @@ The meta tag removal only affects WordPress core tags, not SEO plugin meta tags 
 ---
 
 == Changelog ==
+
+= 2.1.2 =
+* **NEW:** Added configuration details in addition to file locations on main admin card
 
 = 2.1.1 =
 * **NEW:** Cache freshness system with automatic staleness detection
