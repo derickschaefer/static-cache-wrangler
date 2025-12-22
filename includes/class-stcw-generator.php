@@ -80,8 +80,13 @@ class STCW_Generator {
             return;
         }
         
-        // Don't cache admin, logged-in users, special pages, or non-GET requests
+        // Don't cache admin, logged-in users, special pages, archives, or non-GET requests
         $request_method = isset($_SERVER['REQUEST_METHOD']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD'])) : 'GET';
+        
+        // Get sanitized request URI for URL pattern checks
+        $request_uri = isset($_SERVER['REQUEST_URI']) 
+            ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) 
+            : '/';
         
         if (
             is_admin()
@@ -90,10 +95,16 @@ class STCW_Generator {
             || is_search()
             || is_preview()
             || is_feed()
+            || is_author()  // Exclude author archives (/author/username/)
+            || is_date()    // Exclude date archives (/2025/12/, /2025/12/21/)
+            || is_tag()     // Exclude tag archives (/tag/tagname/)
+            || is_category() // Exclude category archives (/category/categoryname/)
             || (defined('REST_REQUEST') && REST_REQUEST)
             || is_trackback()
             || is_comment_feed()
             || $request_method !== 'GET'
+            || strpos($request_uri, 'index.php') !== false  // Exclude malformed index.php URLs
+            || strpos($request_uri, '?') !== false          // Exclude URLs with query strings
         ) {
             return;
         }
