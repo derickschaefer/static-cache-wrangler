@@ -7,17 +7,21 @@
  * @package StaticCacheWrangler
  */
 
-if (!function_exists('stcw_log_debug')) {
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
+if ( ! function_exists( 'stcw_log_debug' ) ) {
     /**
      * Log debug messages safely when WP_DEBUG is enabled.
      *
      * @param string $message Message to log.
      * @return void
      */
-    function stcw_log_debug($message) {
-        if (defined('WP_DEBUG') && WP_DEBUG) {
+    function stcw_log_debug( $message ) {
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
             // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-            error_log('[Static Cache Wrangler] ' . $message);
+            error_log( '[Static Cache Wrangler] ' . $message );
         }
     }
 }

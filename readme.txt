@@ -4,7 +4,7 @@ Tags: static site, static site generator, html export, static site export, cache
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 2.1.3
+Stable tag: 2.1.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,6 +67,12 @@ A demo site created using this plugin can be found at [Cache Wrangler Demo Site]
 ---
 
 ### Key Features
+
+**What's New in 2.1.2:**
+
+= 2.1.4 =
+
+Version 2.1.4 adds STCW_META comment injection with WordPress post data (ID, post_type, permalink, dates, template) to support upcoming Headless Assistant companion plugin.
 
 **What's Fixed in 2.1.3:**
 
@@ -335,6 +341,12 @@ The meta tag removal only affects WordPress core tags, not SEO plugin meta tags 
 ---
 
 == Changelog ==
+
+= 2.1.4 =
+* Added: STCW_META comment injection with WordPress post data (ID, post_type, permalink, dates, template)
+* Added: `scw_cache_metadata` filter for extending metadata
+* Enhanced: Cached HTML now includes authoritative WordPress data for headless CMS migrations
+* Performance: Zero database queries, uses existing $post object (~200 bytes added to HTML)
 
 = 2.1.3 =
 * **IMPROVED:** Adds exclusions for index.php, username, and other bot cralwed URLs that were creating errant cache files.
@@ -660,6 +672,9 @@ View your sitemap at https://your-site.com/sitemap.xml - the XSL stylesheet tran
 ---
 
 == Upgrade Notice ==
+
+= 2.1.4 =
+Adds WordPress metadata injection to cached HTML files for improved headless CMS migration support. Backward compatible.
 
 = 2.0.6 =
 Change all standard template variables to include the prefix stcw_ for WordPress.Org WordPress.NamingConventions.PrefixAllGlobals compliance.

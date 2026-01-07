@@ -514,37 +514,98 @@ class STCW_Generator {
             $html
         );
     }
-    
+
+   /**
+     * Add WordPress metadata as HTML comment
+     *
+     * Injects authoritative WordPress data that can't be reliably extracted from HTML alone.
+     * This enables deterministic imports and proper post type mapping for headless CMS migrations.
+     *
+     * Performance-conscious: Uses only data from $post object (no database queries).
+     *
+     * @since 2.1.4
+     * @param string $html Generated HTML content
+     * @return string HTML with STCW_META comment injected
+     */
+    private function add_metadata_comment( $html ) {
+        global $post;
+
+        // Only add metadata if we have a post object
+        if ( ! is_object( $post ) || ! isset( $post->ID ) ) {
+            return $html;
+        }
+
+        // Build minimal metadata (performance-conscious - no database queries)
+        $metadata = array(
+            'wp_post_id'    => $post->ID,
+            'wp_post_type'  => $post->post_type,
+            'permalink'     => get_permalink( $post ),
+            'post_date'     => $post->post_date,
+            'post_modified' => $post->post_modified,
+            'template'      => get_page_template_slug( $post ) ?: 'default',
+            'scw_version'   => STCW_VERSION,
+            'cached_at'     => gmdate( 'c' ), // ISO 8601 format
+        );
+
+        // Allow simple extensions (use sparingly - performance!)
+        $metadata = apply_filters( 'stcw_cache_metadata', $metadata, $post );
+
+        // JSON encode (unescaped slashes for readability)
+        $json = wp_json_encode( $metadata, JSON_UNESCAPED_SLASHES );
+
+        // Create comment (single line to avoid breaking parsers)
+        $comment = "<!-- STCW_META:" . $json . " -->\n";
+
+        // Insert after <!DOCTYPE> if present, otherwise at start
+        if ( preg_match( '/^(<!DOCTYPE[^>]*>\s*)/i', $html, $matches ) ) {
+            $html = $matches[1] . $comment . substr( $html, strlen( $matches[1] ) );
+        } else {
+            $html = $comment . $html;
+        }
+
+        return $html;
+    }
+
     /**
      * Process HTML for static output
      *
-     * Injects metadata stamp, removes WordPress core meta tags while preserving SEO plugin tags.
+     * Injects metadata stamps (STCW_META + StaticCacheWrangler timestamp),
+     * removes WordPress core meta tags while preserving SEO plugin tags.
      * Uses allowlist approach to protect important SEO metadata.
      *
      * @since 2.0
      * @since 2.0.5 Added WordPress meta tag removal
      * @since 2.1.1 Added metadata stamp injection
+     * @since 2.1.4 Added STCW_META comment for headless CMS migrations
      * @param string $html HTML content
      * @return string Processed HTML
      */
     private function process_static_html($html) {
-        // Inject metadata comment at top of file
+        // First: Add WordPress metadata comment (STCW_META)
+        $html = $this->add_metadata_comment($html);
+
+        // Second: Inject StaticCacheWrangler metadata stamp
         $timestamp = gmdate('c'); // ISO 8601 format (e.g., 2025-01-03T12:55:44Z)
         $version = STCW_VERSION;
         $metadata = "<!-- StaticCacheWrangler: generated={$timestamp}; plugin={$version} -->\n";
-        
-        // Inject after <!DOCTYPE html> if present, otherwise prepend
-        if (preg_match('/<!DOCTYPE[^>]*>/i', $html, $matches, PREG_OFFSET_CAPTURE)) {
+
+        // Find STCW_META comment and insert after it
+        if (preg_match('/<!-- STCW_META:.*? -->\n/s', $html, $matches, PREG_OFFSET_CAPTURE)) {
+            // Insert after STCW_META
+            $pos = $matches[0][1] + strlen($matches[0][0]);
+            $html = substr_replace($html, $metadata, $pos, 0);
+        } elseif (preg_match('/<!DOCTYPE[^>]*>/i', $html, $matches, PREG_OFFSET_CAPTURE)) {
+            // Fallback: Insert after DOCTYPE if no STCW_META
             $pos = $matches[0][1] + strlen($matches[0][0]);
             $html = substr_replace($html, "\n" . $metadata, $pos, 0);
         } else {
             // No DOCTYPE found, prepend to entire file
             $html = $metadata . $html;
         }
-        
+
         // Add generation timestamp comment at bottom (for backward compatibility)
         $comment = "\n<!-- Static version generated: " . gmdate('Y-m-d H:i:s') . " UTC -->\n";
-        
+
         // ALLOWLIST for SEO/meta tags (never remove)
         $allowlist_patterns = [
             'rel=["\']canonical["\']',
@@ -558,38 +619,38 @@ class STCW_Generator {
             'rel=["\']prev["\']',
             'rel=["\']next["\']',
         ];
-        
+
         // Patterns for known WordPress CORE tags only
         $remove_patterns = [
             // WP REST API links
             '#<link[^>]+rel=["\']https://api\.w\.org/["\'][^>]*>#i',
-            
+
             // WordPress RSS & Atom feed discovery links
             '#<link[^>]+rel=["\']alternate["\'][^>]+type=["\']application/(rss\+xml|atom\+xml)["\'][^>]*>#i',
-            
+
             // EditURI (RSD)
             '#<link[^>]+rel=["\']EditURI["\'][^>]*>#i',
-            
+
             // Windows Live Writer manifest
             '#<link[^>]+rel=["\']wlwmanifest["\'][^>]*>#i',
-            
+
             // Shortlink
             '#<link[^>]+rel=["\']shortlink["\'][^>]*>#i',
-            
+
             // WordPress generator
             '#<meta[^>]+name=["\']generator["\'][^>]*>#i',
-            
+
             // oEmbed discovery
             '#<link[^>]+type=["\']application/json\+oembed["\'][^>]*>#i',
             '#<link[^>]+type=["\']text/xml\+oembed["\'][^>]*>#i',
-            
+
             // Emoji scripts (external with src)
             '#<script[^>]+src=["\'][^"\']*wp-emoji[^"\']*["\'][^>]*></script>#i',
-            
+
             // wp-embed.js
             '#<script[^>]+src=["\'][^"\']*wp-embed\.min\.js["\'][^>]*></script>#i',
         ];
-        
+
         /**
          * Apply removal patterns carefully
          * Skip anything that matches the allowlist.
@@ -597,26 +658,26 @@ class STCW_Generator {
         foreach ($remove_patterns as $pattern) {
             $html = preg_replace_callback($pattern, function($m) use ($allowlist_patterns) {
                 $tag = $m[0];
-                
+
                 // If tag matches allowlist → KEEP IT
                 foreach ($allowlist_patterns as $allow) {
                     if (preg_match('#' . $allow . '#i', $tag)) {
                         return $tag;
                     }
                 }
-                
+
                 // Otherwise remove
                 return '';
             }, $html);
         }
-        
+
         // Add generator comment
         if (stripos($html, '</body>') !== false) {
             $html = str_ireplace('</body>', $comment . '</body>', $html);
         } else {
             $html .= $comment;
         }
-        
+
         return $html;
     }
 }

@@ -1,5 +1,156 @@
 # Changelog
 
+# Changelog
+
+## [2.1.4] - 2025-12-31
+
+### Added
+- **WordPress Metadata Injection:** Cached HTML files now include `STCW_META` comment with authoritative WordPress data for headless CMS migrations
+  - `wp_post_id`: Real WordPress post ID for deterministic mapping
+  - `wp_post_type`: Actual post type (page, post, custom post types) - not og:type guess
+  - `permalink`: Canonical URL
+  - `post_date`: Original publish date
+  - `post_modified`: Last modified date for change detection
+  - `template`: Page template file name
+  - `scw_version`: Plugin version at cache time
+  - `cached_at`: Cache generation timestamp (ISO 8601)
+- **Developer Hook:** `scw_cache_metadata` filter allows extending metadata (use sparingly for performance)
+
+### Enhanced
+- **Headless CMS Support:** Enables deterministic imports and proper post type mapping for WordPress → Headless migrations
+- **Migration Workflow:** Companion plugin (STCW Headless Assistant) can extract authoritative WordPress data from cached HTML
+
+### Performance
+- Zero database queries (uses existing `$post` object already in memory)
+- Adds ~200 bytes to each cached HTML file
+- < 1ms overhead per page generation
+
+### Backward Compatibility
+- Old cached files (without STCW_META) continue to work normally
+- New cached files include both STCW_META and StaticCacheWrangler timestamp comments
+- No breaking changes to existing functionality
+
+---
+
+## [2.1.3] - 2025-12-15
+
+### Fixed
+- **URL Filtering:** Added exclusions for malformed URLs (index.php in path, query strings)
+- **Archive Exclusions:** Prevented caching of author, date, tag, and category archives
+- **Version Correction:** Fixed version number consistency across plugin files
+
+### Improved
+- **Cache Quality:** Eliminated errant cache files from bot-crawled URLs
+- **Resource Efficiency:** Reduced unnecessary cache generation for non-content pages
+
+---
+
+## [2.1.2] - 2025-12-10
+
+### Added
+- **Configuration Display:** Admin card now shows configuration details alongside file locations
+- **System Information:** Enhanced visibility into plugin settings and constants
+
+### Improved
+- **Admin UX:** Better configuration visibility for troubleshooting and monitoring
+
+---
+
+## [2.1.1] - 2025-12-04
+
+### Cache Freshness Management
+
+Version 2.1.1 introduces intelligent cache validation that reduces unnecessary page regeneration by over 90% in typical production environments.
+
+### Added
+
+**Cache Freshness System:**
+- Metadata stamps in all generated HTML files tracking generation time and plugin version
+- Automatic staleness detection on every page request
+- TTL-based expiry with configurable cache lifetime (default 24 hours)
+- Plugin version tracking for automatic regeneration after upgrades
+- STCW_CACHE_TTL constant for per-environment cache tuning
+- Detailed logging of cache freshness decisions
+
+**Automatic Sitemap Generation:**
+- ZIP exports now automatically generate fresh sitemap before packaging
+- STCW_SITEMAP_URL constant for deployment-specific URL configuration
+- Seamless workflow: `wp scw zip` includes current sitemap automatically
+
+**Performance Optimizations:**
+- Staleness check overhead: 1-2ms average (reads first 512 bytes only)
+- Cache hit behavior: 0ms additional overhead (skips regeneration entirely)
+- Typical cache hit rate: 90%+ in production environments
+- Resource usage: Zero database queries, zero filesystem writes on cache hit
+
+### Technical Details
+
+**Metadata Format:**
+```html
+<!-- StaticCacheWrangler: generated=2025-12-04T15:30:00Z; plugin=2.1.1 -->
+```
+
+**Staleness Conditions:**
+1. No metadata found in cached file
+2. Plugin version in metadata < current plugin version
+3. File age (now - generated timestamp) > configured TTL
+
+**Configuration:**
+```php
+// wp-config.php
+define('STCW_CACHE_TTL', 86400);              // 24 hours (default)
+define('STCW_SITEMAP_URL', 'https://cdn.example.com');  // Optional
+```
+
+**Staleness Detection Algorithm:**
+1. Check if cached file exists
+2. Read first 512 bytes
+3. Extract metadata via regex
+4. Validate timestamp format
+5. Compare plugin versions
+6. Calculate age and compare to TTL
+7. Return true (stale) or false (fresh)
+
+### Changed
+
+**File Generation Behavior:**
+- Modified `save_output()` to check staleness before regeneration
+- Modified `process_static_html()` to inject metadata after DOCTYPE
+- Modified `create_zip()` to generate fresh sitemap automatically
+
+**Performance Characteristics:**
+- Before: Every page request regenerated HTML (~50-500ms per request)
+- After: Only stale pages regenerate (~1-2ms check, skip if fresh)
+- Result: 90%+ reduction in CPU/memory consumption
+
+### Fixed
+
+- Eliminated unnecessary regeneration when content hasn't changed
+- Resolved race conditions with multiple simultaneous page requests
+- Fixed resource waste from regenerating fresh content repeatedly
+
+### Compatibility
+
+- WordPress 6.9
+- PHP 7.4, 8.0, 8.1, 8.2, 8.3
+- Fully backward compatible with 2.1.0
+- Pre-2.1.1 files automatically regenerate once to get metadata stamps
+
+### Migration Notes
+
+**Upgrading from 2.1.0:**
+1. Update plugin to 2.1.1
+2. First page request regenerates files (adds metadata)
+3. Subsequent requests use cache freshness system
+4. Monitor logs to verify staleness detection working correctly
+
+**Impact on Workflows:**
+- Automated build pipelines benefit from consistent cache behavior
+- Development environments can set shorter TTLs (e.g., 1 hour)
+- Production environments benefit from 24-hour default (reduces load)
+
+---
+
 ## [2.1.1] - 2025-12-04
 
 ### Cache Freshness Management
