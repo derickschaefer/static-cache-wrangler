@@ -4,7 +4,7 @@ Tags: static site, static site generator, html export, static site export, cache
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 2.1.4
+Stable tag: 2.1.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -68,11 +68,11 @@ A demo site created using this plugin can be found at [Cache Wrangler Demo Site]
 
 ### Key Features
 
-**What's New in 2.1.2:**
+**What's New in 2.1.5:**
 
-= 2.1.4 =
+= 2.1.5 =
 
-Version 2.1.4 adds STCW_META comment injection with WordPress post data (ID, post_type, permalink, dates, template) to support upcoming Headless Assistant companion plugin.
+Version 2.1.5 fixes auto asset processing script loading, ensures `STCW_ASYNC_ASSETS` false mode processes assets immediately, prevents endless retries for failed asset downloads, and removes duplicate assets in ZIP exports.
 
 **What's Fixed in 2.1.3:**
 
@@ -341,6 +341,12 @@ The meta tag removal only affects WordPress core tags, not SEO plugin meta tags 
 ---
 
 == Changelog ==
+
+= 2.1.5 =
+* **FIX:** Corrected auto asset processing script path so background processing loads reliably.
+* **FIX:** `STCW_ASYNC_ASSETS` set to false now processes assets immediately during page generation.
+* **FIX:** Failed asset downloads are removed from queue after retries to avoid endless cron reprocessing.
+* **FIX:** ZIP exports no longer duplicate assets already included via static directory packaging.
 
 = 2.1.4 =
 * Added: STCW_META comment injection with WordPress post data (ID, post_type, permalink, dates, template)
@@ -673,6 +679,9 @@ View your sitemap at https://your-site.com/sitemap.xml - the XSL stylesheet tran
 
 == Upgrade Notice ==
 
+= 2.1.5 =
+Fixes asset processing reliability and ZIP packaging behavior. Recommended update for all users.
+
 = 2.1.4 =
 Adds WordPress metadata injection to cached HTML files for improved headless CMS migration support. Backward compatible.
 
@@ -801,3 +810,4 @@ For issues, requests, and documentation, visit:
 
 **Interested in learning more about command-line interfaces and WP-CLI?**  
 Check out [ModernCLI.dev](https://moderncli.dev) — a practical guide to mastering modern CLI workflows.
+

@@ -154,12 +154,18 @@ class STCW_Generator {
         // Extract assets FIRST - before any rewriting
         $assets = $this->extract_asset_urls($output);
 
-        // Process assets asynchronously if enabled
+        // Rewrite asset paths to local assets directory for static output
+        $static_output = $this->rewrite_asset_paths($static_output);
+
+        // Process assets based on configured mode
         if (STCW_ASYNC_ASSETS) {
-            // Rewrite asset paths
-            $static_output = $this->rewrite_asset_paths($static_output);
-            // Queue assets for download
+            // Queue assets for background download
             $this->asset_handler->queue_asset_downloads($assets);
+        } else {
+            // Process immediately when async mode is disabled
+            foreach ($assets as $asset_url) {
+                $this->asset_handler->download_to_assets($asset_url);
+            }
         }
 
         // Rewrite internal links to relative paths
@@ -681,3 +687,4 @@ class STCW_Generator {
         return $html;
     }
 }
+

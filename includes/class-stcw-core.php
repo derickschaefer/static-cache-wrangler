@@ -64,7 +64,7 @@ class STCW_Core {
         
         wp_enqueue_script(
             'stcw-auto-process',
-            STCW_PLUGIN_URL . 'includes/js/auto-process.js',
+            STCW_PLUGIN_URL . 'admin/js/auto-process.js',
             [],
             STCW_VERSION,
             true
@@ -303,7 +303,6 @@ class STCW_Core {
      */
     public static function clear_all_files() {
         $static_dir = self::get_static_dir();
-        $assets_dir = self::get_assets_dir();
         
         // Clear static directory
         if (is_dir($static_dir)) {
@@ -387,16 +386,10 @@ class STCW_Core {
         }
 
         $static_dir = self::get_static_dir();
-        $assets_dir = self::get_assets_dir();
 
         // Add static files
         if (is_dir($static_dir)) {
             self::add_directory_to_zip($zip, $static_dir, '');
-        }
-
-        // Add assets
-        if (is_dir($assets_dir)) {
-            self::add_directory_to_zip($zip, $assets_dir, 'assets');
         }
 
         $zip->close();
@@ -437,3 +430,4 @@ class STCW_Core {
         }
     }
 }
+

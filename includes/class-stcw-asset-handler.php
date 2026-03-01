@@ -69,6 +69,7 @@ class STCW_Asset_Handler {
         
         $batch_size = 10;
         $processed = 0;
+        $failed = 0;
         
         // Process assets in batches
         foreach ($assets as $key => $url) {
@@ -84,6 +85,10 @@ class STCW_Asset_Handler {
             if ($result !== false) {
                 unset($assets[$key]);
                 $processed++;
+            } else {
+                // Drop failed URLs after retry attempts to avoid endless cron retries.
+                unset($assets[$key]);
+                $failed++;
             }
         }
         
@@ -97,11 +102,12 @@ class STCW_Asset_Handler {
             if (!wp_next_scheduled('stcw_process_assets')) {
                 wp_schedule_single_event(time() + 30, 'stcw_process_assets');
             }
-	}
-	    // Profiler hook – end async batch
-	    if (defined('STCW_PROFILING_ENABLED') && STCW_PROFILING_ENABLED) {
-	        do_action('stcw_after_asset_batch', $processed, $failed);
-	    }
+        }
+
+        // Profiler hook – end async batch
+        if (defined('STCW_PROFILING_ENABLED') && STCW_PROFILING_ENABLED) {
+            do_action('stcw_after_asset_batch', $processed, $failed);
+        }
     }
     
     /**
@@ -354,3 +360,4 @@ class STCW_Asset_Handler {
         return $js;
     }
 }
+
