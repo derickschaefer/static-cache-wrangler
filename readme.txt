@@ -4,7 +4,7 @@ Tags: static site, static site generator, html export, static site export, cache
 Requires at least: 5.0
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 2.1.5
+Stable tag: 2.1.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -67,6 +67,12 @@ A demo site created using this plugin can be found at [Cache Wrangler Demo Site]
 ---
 
 ### Key Features
+
+**What's New in 2.1.6:**
+
+= 2.1.6 =
+
+Version 2.1.6 Adds ghost file protection for environments where PHP memory based failures cause the HTML generation process to fail rendering blank HTML files.
 
 **What's New in 2.1.5:**
 

@@ -125,12 +125,21 @@ class STCW_Generator {
      *
      * @since 2.0
      * @since 2.1.1 Added staleness checking before regeneration
+     * @since 2.1.6 Added ghost file protection
      * @param string $output HTML output from WordPress
      * @return string Original output (unchanged for display)
      */
     public function save_output($output) {
         $static_file = $this->url_helper->get_static_file_path();
-        $static_dir = dirname($static_file);
+	$static_dir = dirname($static_file);
+
+	// Ghost file guard: if PHP crashed mid-render the buffer will contain
+        // only our metadata comments (~140 bytes) with no real HTML body.
+        // Bail out without writing anything — WordPress still sends output to browser.
+        if ( strlen( $output ) < 1024 || stripos( $output, '<html' ) === false ) {
+            stcw_log_debug( 'Skipping cache write — output incomplete (' . strlen( $output ) . ' bytes): ' . basename( $static_file ) );
+            return $output;
+        }
 
         // Check if file exists and is still fresh
         if (file_exists($static_file)) {
