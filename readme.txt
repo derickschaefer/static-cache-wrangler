@@ -2,7 +2,7 @@
 Contributors: derickschaefer
 Tags: static site, static site generator, html export, static site export, cache
 Requires at least: 5.0
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 7.4
 Stable tag: 2.1.7
 License: GPLv2 or later
@@ -354,6 +354,10 @@ The meta tag removal only affects WordPress core tags, not SEO plugin meta tags 
 
 == Changelog ==
 
+= 2.1.7 =
+* **Confirmed:** Verified compatibility with WordPress 7.0
+= 2.1.6 =
+* **Added:** Adds ghost file protection for environments where PHP memory based failures cause the HTML generation process to fail rendering blank HTML files.
 = 2.1.5 =
 * **FIX:** Corrected auto asset processing script path so background processing loads reliably.
 * **FIX:** `STCW_ASYNC_ASSETS` set to false now processes assets immediately during page generation.
